@@ -192,7 +192,7 @@
         petg_blue: [0x2f6db5, 0.55, 0.0], petg_grey: [0x8e99a6, 0.6, 0.0], brass: [0xc9a227, 0.35, 0.8], gearbox_white: [0xe9ecef, 0.5, 0.0],
         can_silver: [0xb8bec6, 0.3, 0.9], cap_yellow: [0xf2c230, 0.5, 0.0], steel: [0x9aa1a9, 0.3, 0.9], lipo: [0x34507a, 0.5, 0.1],
         pcb_green: [0x1f7a3a, 0.6, 0.1], pcb_blue: [0x1d4f91, 0.6, 0.1], pcb_black: [0x1d2228, 0.5, 0.2], wood: [0xc99a62, 0.85, 0.0],
-        switch_red: [0xc0392b, 0.45, 0.0], terminal_blue: [0x2a6fdb, 0.5, 0.0], header_white: [0xf0f0f0, 0.5, 0.0], nylon: [0xe4dfcf, 0.6, 0.0],
+        switch_red: [0xd2261c, 0.35, 0.0], switch_black: [0x16191d, 0.55, 0.1], terminal_blue: [0x2a6fdb, 0.5, 0.0], header_white: [0xf0f0f0, 0.5, 0.0], nylon: [0xe4dfcf, 0.6, 0.0],
         pla_grey: [0xc9ced6, 0.55, 0.0], tpu_black: [0x24272b, 0.9, 0.0], arm_copper: [0xb8531f, 0.45, 0.1], servo_dark: [0x2a2d33, 0.5, 0.2],
       };
       const mat = (key) => { const [c, r, m] = COLORS[key] || [0x888888, 0.5, 0]; return new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, transparent: true, opacity: 1 }); };
@@ -208,7 +208,7 @@
 
       // ------------------------------------------------------------------ assembly events (robot mm offsets)
       const MOTOR = (k) => [`motor_${k}_gearbox`, `motor_${k}_can`, `motor_${k}_cap`, `motor_${k}_collar`, `motor_${k}_shaft`];
-      const DECK = ["deck", "kill_switch", "esp32", "esp32_standoff_1", "esp32_standoff_2", "mdd10a", "mdd10a_terminals", "mdd10a_header",
+      const DECK = ["deck", "kill_switch", "kill_switch_rocker", "kill_switch_tabs", "esp32", "esp32_standoff_1", "esp32_standoff_2", "mdd10a", "mdd10a_terminals", "mdd10a_header",
                     "mdd10a_spacer_1", "mdd10a_spacer_2", "mdd10a_spacer_3", "mdd10a_spacer_4"];
       const EV = [];
       const ev = (names, t0, t1, off, spin) => names.forEach((n) => EV.push({ n, t0, t1, off, spin }));
@@ -241,7 +241,7 @@
       ev(["bar_1", "bar_2"], 138.5, 141, [0, 0, 50]);
       // step 7 (deck parts first assemble while the deck floats 120 mm up, then the deck group lowers)
       ev(["deck"], 144, 146, [0, 0, 260]);
-      ev(["kill_switch"], 146.5, 149, [0, 0, 330]);
+      ev(["kill_switch", "kill_switch_rocker", "kill_switch_tabs"], 146.5, 149, [0, 0, 330]);
       ev(["esp32_standoff_1", "esp32_standoff_2"], 149.5, 151, [0, 0, 180]);
       ev(["esp32"], 151, 153.5, [0, 0, 140]);
       ev(["mdd10a_spacer_1", "mdd10a_spacer_2", "mdd10a_spacer_3", "mdd10a_spacer_4"], 154, 155.5, [0, 0, 330]);
@@ -286,7 +286,7 @@
       // ------------------------------------------------------------------ 3D labels (anchor: part name or robot-mm point)
       const LABELS = [
         { t0: 2, t1: 9, at: "deck", txt: "3 mm wooden deck", sub: "", dx: 260, dy: -160 },
-        { t0: 2.6, t1: 9, at: "kill_switch", txt: "kill switch", sub: "", dx: -320, dy: -110 },
+        { t0: 2.6, t1: 9, at: "kill_switch_rocker", txt: "kill switch", sub: "", dx: -320, dy: -110 },
         { t0: 23.5, t1: 36.5, at: "tub", txt: "RR-01 tub v2", sub: "240 × 138 × 43", dx: 260, dy: 120 },
         { t0: 28, t1: 36.5, at: "insert_1", txt: "M3 heat-set insert", sub: "× 4", dx: 120, dy: -150 },
         { t0: 40, t1: 47.5, at: "motor_FL_gearbox", txt: "370 gear motor", sub: "Ø37.5 gearbox", dx: 220, dy: -160 },
@@ -300,7 +300,7 @@
         { t0: 111, t1: 132.5, at: "tyre_RL", txt: "TPU tyre", sub: "rear only", dx: -320, dy: -140 },
         { t0: 116.5, t1: 132.5, at: "wheel_FL", txt: "hard front wheel", sub: "Ø140 · Ø6 bore", dx: 200, dy: -170 },
         { t0: 135, t1: 142.5, at: "battery", txt: "3S LiPo 2200", sub: "106 × 34 × 26", dx: 230, dy: -150 },
-        { t0: 147, t1: 166.5, at: "kill_switch", txt: "kill switch", sub: "KCD4", dx: -330, dy: -120 },
+        { t0: 147, t1: 166.5, at: "kill_switch_rocker", txt: "kill switch", sub: "KCD4", dx: -330, dy: -120 },
         { t0: 151.5, t1: 166.5, at: "esp32", txt: "ESP32 under the deck", sub: "", dx: -380, dy: 120 },
         { t0: 156, t1: 166.5, at: "mdd10a", txt: "Cytron MDD10A", sub: "terminals forward", dx: 220, dy: -170 },
         { t0: 169, t1: 180.5, at: "arm_screw_3", txt: "M3 × 20 + nyloc", sub: "× 4", dx: 240, dy: 120 },

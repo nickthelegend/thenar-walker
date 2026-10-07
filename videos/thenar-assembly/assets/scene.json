@@ -597,13 +597,35 @@
 {
 "name": "kill_switch",
 "step": "deck",
+"color": "switch_black",
+"center": [
+-0.009,
+0.09275,
+-0.047
+],
+"faces": 68
+},
+{
+"name": "kill_switch_rocker",
+"step": "deck",
 "color": "switch_red",
 "center": [
 -0.009,
-0.091,
+0.1088,
 -0.047
 ],
-"faces": 36
+"faces": 24
+},
+{
+"name": "kill_switch_tabs",
+"step": "deck",
+"color": "steel",
+"center": [
+-0.009,
+0.0755,
+-0.047
+],
+"faces": 320
 },
 {
 "name": "mdd10a",

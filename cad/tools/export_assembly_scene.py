@@ -135,9 +135,11 @@ def build_parts():
     for j, (px, py) in enumerate(BP.board_corners('ESP32'), 1):
         add(f'esp32_standoff_{j}', cz(px, py, 2.2, zb, T.TOP, 6), 'deck', 'brass')
     kx, ky = D.KILL_XY
-    add('kill_switch', trimesh.util.concatenate([bx(kx - 11.6, kx + 11.6, ky - 15.6, ky + 15.6, T.TOP + 3, T.TOP + 5.5),
-                                                 bx(kx - 7, kx + 7, ky - 11, ky + 11, T.TOP + 5.5, T.TOP + 11),
-                                                 bx(kx - 10.8, kx + 10.8, ky - 14.8, ky + 14.8, T.TOP + 3 - 32, T.TOP + 3)]), 'deck', 'switch_red')
+    import make_kill_switch as K                         # detailed KCD4: frame + body, red rocker, tabs
+    for nm, (m, col) in K.parts().items():
+        m = m.copy()
+        m.apply_translation([kx, ky, T.TOP + 3])         # local z = 0 is the top of the 3 mm wooden deck
+        add('kill_switch' if nm == 'kill_switch_frame' else nm, m, 'deck', col)
     bx0, by0, _, _ = D.BOARDS['MDD10A']
     zt = T.TOP + 3 + 6
     md = [bx(bx0 - 42.25, bx0 + 42.25, by0 - 31, by0 + 31, zt, zt + 1.6),
