@@ -28,7 +28,7 @@ The parts bought locally differ from the original design above, and the printabl
 | Deck | 3 mm wooden board cut to 250 × 138 — template `docs/wood_deck/` |
 | Motor driver | Cytron **MDD10A** (one board, PWM + DIR), on the deck top |
 | Wheels | 6 mm-bore versions (plate 4b), flat TPU tyre strips (plates 5F / 5G) |
-| Assembly film | `videos/thenar-assembly` (HyperFrames, 4 min, every part and connection) — MP4 on the GitHub release |
+| Assembly film | **[Watch / download the 4-minute assembly film](https://github.com/nickthelegend/thenar-walker/releases/tag/v1)** — every part and every connection, built from this CAD (`videos/thenar-assembly`) |
 
 The SolidWorks assembly and `docs/VERIFICATION.md` still show the original 25 mm-motor tub; resync them when SolidWorks is available.
 
