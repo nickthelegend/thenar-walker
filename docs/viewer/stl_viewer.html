@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Thenar Walker part viewer</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #10161d; color: #e6ecf2; font: 14px "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  #hud { position: absolute; left: 16px; top: 14px; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+  #hud b { font-size: 20px; }
+  #hud span { color: #9fb0c2; }
+  canvas { display: block; }
+</style>
+<script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.181.2/build/three.module.js",
+                 "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="hud"><b id="name">loading…</b><span id="size"></span><span>drag to rotate · scroll to zoom · right-drag to pan</span></div>
+<script type="module">
+  // Opens any project STL: stl_viewer.html?f=cad/stl/P-08_Kill_Switch_KCD4.STL  (served from the project root)
+  import * as THREE from "three";
+  import { STLLoader } from "three/addons/loaders/STLLoader.js";
+  import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+  const file = new URLSearchParams(location.search).get("f") || "cad/stl/P-08_Kill_Switch_KCD4.STL";
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(devicePixelRatio); renderer.setSize(innerWidth, innerHeight);
+  document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x10161d);
+  const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.1, 5000);
+  scene.add(new THREE.HemisphereLight(0xe8eef5, 0x2a3440, 2.2));
+  const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(1, 2, 1.5); scene.add(key);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  new STLLoader().load("../../" + file, (geo) => {
+    geo.computeVertexNormals(); geo.computeBoundingBox();
+    const bb = geo.boundingBox, c = new THREE.Vector3(), s = new THREE.Vector3();
+    bb.getCenter(c); bb.getSize(s);
+    geo.translate(-c.x, -c.y, -c.z);
+    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xc8ced6, roughness: 0.5, metalness: 0.1 }));
+    mesh.rotation.x = -Math.PI / 2;                     // CAD Z-up -> viewer Y-up
+    scene.add(mesh);
+    const r = Math.max(s.x, s.y, s.z);
+    camera.position.set(r * 1.6, r * 1.2, r * 1.8); controls.update();
+    const grid = new THREE.GridHelper(r * 3, 30, 0x2e4256, 0x223140); grid.position.y = -s.z / 2; scene.add(grid);
+    document.getElementById("name").textContent = file.split("/").pop();
+    document.getElementById("size").textContent = `${s.x.toFixed(1)} × ${s.y.toFixed(1)} × ${s.z.toFixed(1)} mm`;
+  });
+  addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+  renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
+</body>
+</html>
