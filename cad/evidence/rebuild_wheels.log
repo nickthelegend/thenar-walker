@@ -1,0 +1,23 @@
+STOW        size [293.7, 196.0, 292.9]  lowest 57.0 (RR-01_Chassis_Tub-1)  interferences 6  mass 2390 g  COG [-8.2, 2.9, 117.7]  grasp [120.7, 18.2, 148.0]
+HOME        size [417.1, 196.0, 358.1]  lowest 57.0 (RR-01_Chassis_Tub-1)  interferences 6  mass 2390 g  COG [8.0, 2.6, 130.8]  grasp [261.7, -1.3, 306.8]
+REACH_450   size [410.6, 196.0, 473.5]  lowest 57.0 (RR-01_Chassis_Tub-1)  interferences 6  mass 2390 g  COG [12.2, 4.2, 146.8]  grasp [260.0, -0.5, 449.6]
+PICK_FLOOR  size [442.6, 196.0, 258.3]  lowest 17.9 (SO101_Follower_Master-1/Gripper_body_MG996R_R3-1)  interferences 6  mass 2390 g  COG [27.5, 2.6, 104.5]  grasp [254.4, -0.2, 25.1]
+
+PASS Start box 300 x 200 x 300 (STOW) — 293.7 x 196.0 x 292.9 mm
+PASS Ground clearance >= 50 mm (STOW) — 57.0 mm at RR-01_Chassis_Tub-1
+PASS Ground clearance >= 50 mm (HOME) — 57.0 mm at RR-01_Chassis_Tub-1
+PASS Ground clearance >= 50 mm (REACH_450) — 57.0 mm at RR-01_Chassis_Tub-1
+PASS Grasp object centred at 450 mm (REACH_450) — 50 mm object centre z = 449.6 mm, 140 mm ahead of the chassis
+PASS Floor pick: 50 mm cube on the ground ahead of the wheels — grasp centre [254.4, -0.2, 25.1] (cube centre z = 25)
+PASS No interference (STOW) — clear (+6 intended servo-spline/horn overlaps from the arm CAD)
+PASS No interference (HOME) — clear (+6 intended servo-spline/horn overlaps from the arm CAD)
+PASS No interference (REACH_450) — clear (+6 intended servo-spline/horn overlaps from the arm CAD)
+PASS No interference (PICK_FLOOR) — clear (+6 intended servo-spline/horn overlaps from the arm CAD)
+PASS Static stability (STOW, flat + 15 deg ramp) — worst margin 36.3 mm: {'front': 84.2, 'rear': 67.8, 'left': 81.1, 'right': 86.9, 'climb_15deg_rear_axle': 36.3, 'descend_15deg_front_axle': 52.7, 'traverse_15deg_side': 49.5}
+PASS Static stability (HOME, flat + 15 deg ramp) — worst margin 32.9 mm: {'front': 68.0, 'rear': 84.0, 'left': 81.4, 'right': 86.6, 'climb_15deg_rear_axle': 49.0, 'descend_15deg_front_axle': 32.9, 'traverse_15deg_side': 46.3}
+PASS Static stability (REACH_450, flat + 15 deg ramp) — worst margin 24.5 mm: {'front': 63.8, 'rear': 88.2, 'left': 79.8, 'right': 88.2, 'climb_15deg_rear_axle': 48.8, 'descend_15deg_front_axle': 24.5, 'traverse_15deg_side': 40.5}
+PASS Static stability (PICK_FLOOR, flat + 15 deg ramp) — worst margin 20.5 mm: {'front': 48.5, 'rear': 103.5, 'left': 81.4, 'right': 86.6, 'climb_15deg_rear_axle': 75.5, 'descend_15deg_front_axle': 20.5, 'traverse_15deg_side': 53.4}
+renders in F:\Projects\thenar-walker\cad\renders
+closed 25 Thenar Walker docs
+wrote F:\Projects\thenar-walker\docs\VERIFICATION.md
+CHAIN_DONE

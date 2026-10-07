@@ -1,0 +1,21 @@
+STOW        size [293.7, 196.0, 292.9]  lowest 57.0 (RR-01_Chassis_Tub-1)  interferences 6  mass 2370 g  COG [-8.2, 3.0, 118.1]  grasp [118.0, -8.0, 145.7]
+HOME        size [417.1, 196.0, 358.1]  lowest 57.0 (RR-01_Chassis_Tub-1)  interferences 6  mass 2370 g  COG [8.1, 2.6, 131.3]  grasp [257.1, -0.0, 280.7]
+REACH_450   size [407.5, 196.0, 517.3]  lowest 57.0 (RR-01_Chassis_Tub-1)  interferences 6  mass 2370 g  COG [11.3, 2.6, 148.5]  grasp [255.0, -0.0, 448.8]
+PICK_FLOOR  size [471.5, 196.0, 258.3]  lowest 18.0 (SO101_Follower_Master-1/Gripper_body_MG996R_R3-1)  interferences 6  mass 2370 g  COG [28.9, 2.6, 104.8]  grasp [259.3, -0.0, 24.9]
+
+PASS Start box 300 x 200 x 300 (STOW) — 293.7 x 196.0 x 292.9 mm
+PASS Ground clearance >= 50 mm (STOW) — 57.0 mm at RR-01_Chassis_Tub-1
+PASS Ground clearance >= 50 mm (HOME) — 57.0 mm at RR-01_Chassis_Tub-1
+PASS Ground clearance >= 50 mm (REACH_450) — 57.0 mm at RR-01_Chassis_Tub-1
+PASS Grasp object centred at 450 mm (REACH_450) — grasp centre z = 448.8 mm, 135 mm ahead of the chassis
+PASS Floor pick: 50 mm cube on the ground ahead of the wheels — grasp centre [259.3, -0.0, 24.9] (cube centre z = 25)
+PASS No interference (STOW) — clear (+6 intended servo-spline/horn overlaps from the arm CAD)
+PASS No interference (HOME) — clear (+6 intended servo-spline/horn overlaps from the arm CAD)
+PASS No interference (REACH_450) — clear (+6 intended servo-spline/horn overlaps from the arm CAD)
+PASS No interference (PICK_FLOOR) — clear (+6 intended servo-spline/horn overlaps from the arm CAD)
+PASS Static stability (STOW, flat + 15 deg ramp) — worst margin 36.1 mm: {'front': np.float64(84.2), 'rear': np.float64(67.8), 'left': np.float64(81.0), 'right': np.float64(87.0), 'climb_15deg_rear_axle': np.float64(36.1), 'descend_15deg_front_axle': np.float64(52.6), 'traverse_15deg_side': np.float64(49.4)}
+PASS Static stability (HOME, flat + 15 deg ramp) — worst margin 32.7 mm: {'front': np.float64(67.9), 'rear': np.float64(84.1), 'left': np.float64(81.4), 'right': np.float64(86.6), 'climb_15deg_rear_axle': np.float64(48.9), 'descend_15deg_front_axle': np.float64(32.7), 'traverse_15deg_side': np.float64(46.2)}
+PASS Static stability (REACH_450, flat + 15 deg ramp) — worst margin 24.9 mm: {'front': np.float64(64.7), 'rear': np.float64(87.3), 'left': np.float64(81.4), 'right': np.float64(86.6), 'climb_15deg_rear_axle': np.float64(47.5), 'descend_15deg_front_axle': np.float64(24.9), 'traverse_15deg_side': np.float64(41.6)}
+PASS Static stability (PICK_FLOOR, flat + 15 deg ramp) — worst margin 19.0 mm: {'front': np.float64(47.1), 'rear': np.float64(104.9), 'left': np.float64(81.4), 'right': np.float64(86.6), 'climb_15deg_rear_axle': np.float64(76.8), 'descend_15deg_front_axle': np.float64(19.0), 'traverse_15deg_side': np.float64(53.3)}
+renders in F:\Projects\thenar-walker\cad\renders
+closed 24 Thenar Walker docs

@@ -1,0 +1,217 @@
+{
+ "scenario": "A",
+ "sim_time_s": 107.64,
+ "events": [
+  {
+   "t": 2.38,
+   "event": "approach_error_mm",
+   "value": 1.535616446820709
+  },
+  {
+   "t": 7.65,
+   "event": "cube50_in_hand_offset_mm",
+   "value": [
+    -24.8,
+    0.0,
+    4.6
+   ]
+  },
+  {
+   "t": 7.65,
+   "event": "cube50_lifted_to_mm",
+   "value": 106.6
+  },
+  {
+   "t": 7.65,
+   "event": "ik_unreachable",
+   "target": [
+    0.19,
+    0.0,
+    0.2
+   ],
+   "err_mm": 4.678071301449962
+  },
+  {
+   "t": 68.29,
+   "event": "place_align_error_mm",
+   "value": 421.7908661601282
+  },
+  {
+   "t": 88.89,
+   "event": "cube50_in_hand_offset_mm",
+   "value": [
+    -25.3,
+    0.1,
+    15.5
+   ]
+  },
+  {
+   "t": 88.89,
+   "event": "ik_unreachable",
+   "target": [
+    0.6767908661601282,
+    -0.05053753517488256,
+    0.065
+   ],
+   "err_mm": 281.07364932890744
+  },
+  {
+   "t": 91.2,
+   "event": "ik_unreachable",
+   "target": [
+    0.9912918147550154,
+    -0.07009940610857118,
+    0.065
+   ],
+   "err_mm": 589.4816467610392
+  },
+  {
+   "t": 91.53,
+   "event": "ik_unreachable",
+   "target": [
+    1.2984838270351247,
+    -0.09028025224768647,
+    0.065
+   ],
+   "err_mm": 894.1770520874069
+  },
+  {
+   "t": 91.73,
+   "event": "ik_unreachable",
+   "target": [
+    1.6031475290357982,
+    -0.11034338331932464,
+    0.065
+   ],
+   "err_mm": 1197.6372499247002
+  },
+  {
+   "t": 91.87,
+   "event": "ik_unreachable",
+   "target": [
+    1.9065775884484983,
+    -0.13037311173275026,
+    0.065
+   ],
+   "err_mm": 1500.4947165244018
+  },
+  {
+   "t": 91.99,
+   "event": "ik_unreachable",
+   "target": [
+    1.9065775884484983,
+    -0.13037311173275026,
+    0.031
+   ],
+   "err_mm": 1503.5938894594449
+  },
+  {
+   "t": 92.11,
+   "event": "ik_unreachable",
+   "target": [
+    2.210293064127915,
+    -0.15052158451189118,
+    0.031
+   ],
+   "err_mm": 1806.6544371070063
+  },
+  {
+   "t": 92.22,
+   "event": "ik_unreachable",
+   "target": [
+    2.5131553805247724,
+    -0.17063854379803564,
+    0.031
+   ],
+   "err_mm": 2109.195823679019
+  },
+  {
+   "t": 92.32,
+   "event": "ik_unreachable",
+   "target": [
+    2.815700173351089,
+    -0.19074678929902264,
+    0.031
+   ],
+   "err_mm": 2411.639349415633
+  },
+  {
+   "t": 92.39,
+   "event": "ik_unreachable",
+   "target": [
+    3.118115489267374,
+    -0.2108630129147867,
+    0.031
+   ],
+   "err_mm": 2714.104151748845
+  },
+  {
+   "t": 92.43,
+   "event": "ik_unreachable",
+   "target": [
+    3.118115489267374,
+    -0.2108630129147867,
+    0.026500000000000003
+   ],
+   "err_mm": 2714.3803067258336
+  },
+  {
+   "t": 93.51,
+   "event": "ik_unreachable",
+   "target": [
+    0.3513595143959897,
+    -0.027400697271958672,
+    -0.052365869233599364
+   ],
+   "err_mm": 67.74090499299965
+  },
+  {
+   "t": 102.34,
+   "event": "ik_unreachable",
+   "target": [
+    0.29674898005079414,
+    -0.023679712451020903,
+    0.05869266038242842
+   ],
+   "err_mm": 7.8464560666977095
+  }
+ ],
+ "checks": [
+  {
+   "check": "Robot never tips (|roll| < 25 deg, |pitch| < 25 deg)",
+   "pass": true,
+   "detail": "max |pitch| 15.7 deg, max |roll| 0.1 deg"
+  },
+  {
+   "check": "Chassis / motors never touch an obstacle (only tyres do)",
+   "pass": true,
+   "detail": "no contacts"
+  },
+  {
+   "check": "Pickup: cube lifted clear of the ground",
+   "pass": true,
+   "detail": "max cube height 307 mm"
+  },
+  {
+   "check": "Cube held by the gripper the whole way (no drop)",
+   "pass": true,
+   "detail": "8480 samples from pickup to touchdown, 0 with the cube > 20 mm from the grasp point"
+  },
+  {
+   "check": "Climbed the 15 deg ramp and crossed the 400 mm bridge",
+   "pass": true,
+   "detail": "max chassis lift 80.0 mm (bridge = 80)"
+  },
+  {
+   "check": "Drove down and over all four 40 mm speed breakers",
+   "pass": false,
+   "detail": "rear axle passed y = 0.597 m"
+  },
+  {
+   "check": "Placed completely inside the 80 x 80 mm square",
+   "pass": false,
+   "detail": "cube centre offset (-17.6, -282.8) mm, z 25.0 mm"
+  }
+ ],
+ "all_pass": false
+}

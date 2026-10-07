@@ -1,0 +1,66 @@
+{
+ "P1S_Rover_3_FrontWheel_RearHub_A_PRINT_FIRST.3mf": {
+  "time_s": 22119,
+  "time": "6 h 8 min",
+  "weight_g": 201.81,
+  "plate": "P1S_Rover_3_FrontWheel_RearHub_A_PRINT_FIRST.3mf",
+  "material": "PETG",
+  "sliced_file": "F:\\Projects\\thenar-walker\\cad\\print\\sliced\\P1S_Rover_3_FrontWheel_RearHub_A_PRINT_FIRST_sliced.3mf"
+ },
+ "P1S_Rover_2_Deck.3mf": {
+  "time_s": 12441,
+  "time": "3 h 27 min",
+  "weight_g": 116.92,
+  "plate": "P1S_Rover_2_Deck.3mf",
+  "material": "PETG",
+  "sliced_file": "F:\\Projects\\thenar-walker\\cad\\print\\sliced\\P1S_Rover_2_Deck_sliced.3mf"
+ },
+ "P1S_Rover_4b_FrontWheel_RearHub_6mm_shaft.3mf": {
+  "time_s": 22039,
+  "time": "6 h 7 min",
+  "weight_g": 201.84,
+  "plate": "P1S_Rover_4b_FrontWheel_RearHub_6mm_shaft.3mf",
+  "material": "PETG",
+  "sliced_file": "F:\\Projects\\thenar-walker\\cad\\print\\sliced\\P1S_Rover_4b_FrontWheel_RearHub_6mm_shaft_sliced.3mf"
+ },
+ "P1S_Rover_5_RearTyres_TPU.3mf": {
+  "time_s": 24316,
+  "time": "6 h 45 min",
+  "weight_g": 94.32,
+  "plate": "P1S_Rover_5_RearTyres_TPU.3mf",
+  "material": "TPU 95A",
+  "sliced_file": "F:\\Projects\\thenar-walker\\cad\\print\\sliced\\P1S_Rover_5_RearTyres_TPU_sliced.3mf"
+ },
+ "P1S_Rover_5F_FlatTyreStrips_4tyres_TPU.3mf": {
+  "time_s": 40391,
+  "time": "11 h 13 min",
+  "weight_g": 167.68,
+  "plate": "P1S_Rover_5F_FlatTyreStrips_4tyres_TPU.3mf",
+  "material": "TPU 95A",
+  "sliced_file": "F:\\Projects\\thenar-walker\\cad\\print\\sliced\\P1S_Rover_5F_FlatTyreStrips_4tyres_TPU_sliced.3mf"
+ },
+ "P1S_Rover_5F_FlatTyreStrips_2tyres_TPU.3mf": {
+  "time_s": 20407,
+  "time": "5 h 40 min",
+  "weight_g": 83.88,
+  "plate": "P1S_Rover_5F_FlatTyreStrips_2tyres_TPU.3mf",
+  "material": "TPU 95A",
+  "sliced_file": "F:\\Projects\\thenar-walker\\cad\\print\\sliced\\P1S_Rover_5F_FlatTyreStrips_2tyres_TPU_sliced.3mf"
+ },
+ "P1S_Rover_5G_FlatTyreStrips_4tyres_TPU.3mf": {
+  "time_s": 40391,
+  "time": "11 h 13 min",
+  "weight_g": 167.68,
+  "plate": "P1S_Rover_5G_FlatTyreStrips_4tyres_TPU.3mf",
+  "material": "TPU 95A",
+  "sliced_file": "F:\\Projects\\thenar-walker\\cad\\print\\sliced\\P1S_Rover_5G_FlatTyreStrips_4tyres_TPU_sliced.3mf"
+ },
+ "P1S_Rover_1_Tub_Cage_Bars.3mf": {
+  "time_s": 24644,
+  "time": "6 h 50 min",
+  "weight_g": 252.21,
+  "plate": "P1S_Rover_1_Tub_Cage_Bars.3mf",
+  "material": "PETG",
+  "sliced_file": "F:\\Projects\\thenar-walker\\cad\\print\\sliced\\P1S_Rover_1_Tub_Cage_Bars_sliced.3mf"
+ }
+}

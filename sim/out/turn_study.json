@@ -1,0 +1,38 @@
+{
+ "JGA25 78:1 (6.2 kg.cm, 77 rpm), all TPU  [current]": {
+  "spin_35%_deg_s": 0.2,
+  "spin_65%_deg_s": 31.6,
+  "spin_100%_deg_s": 83.6,
+  "arc_30/90%_deg_s": 2.8,
+  "arc_speed_m_s": 0.31,
+  "straight_100%_m_s": 0.53,
+  "climbs_ramp_at_35%": true
+ },
+ "JGA25 131:1 (~10 kg.cm, ~46 rpm), all TPU": {
+  "spin_35%_deg_s": 7.5,
+  "spin_65%_deg_s": 32.1,
+  "spin_100%_deg_s": 64.4,
+  "arc_30/90%_deg_s": 5.3,
+  "arc_speed_m_s": 0.19,
+  "straight_100%_m_s": 0.32,
+  "climbs_ramp_at_35%": true
+ },
+ "JGA25 171:1 (~12 kg.cm, ~35 rpm), all TPU": {
+  "spin_35%_deg_s": 8.2,
+  "spin_65%_deg_s": 26.5,
+  "spin_100%_deg_s": 52.8,
+  "arc_30/90%_deg_s": 6.3,
+  "arc_speed_m_s": 0.15,
+  "straight_100%_m_s": 0.24,
+  "climbs_ramp_at_35%": true
+ },
+ "JGA25 78:1, PETG front / TPU rear": {
+  "spin_35%_deg_s": 20.0,
+  "spin_65%_deg_s": 77.0,
+  "spin_100%_deg_s": 136.2,
+  "arc_30/90%_deg_s": 14.3,
+  "arc_speed_m_s": 0.31,
+  "straight_100%_m_s": 0.53,
+  "climbs_ramp_at_35%": true
+ }
+}

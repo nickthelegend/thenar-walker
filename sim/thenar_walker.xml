@@ -1,0 +1,189 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="thenar_walker_roboreach">
+  <compiler angle="radian" meshdir="." inertiafromgeom="auto" autolimits="true" />
+  <option timestep="0.001" integrator="implicitfast" cone="elliptic" impratio="5" />
+  <visual>
+    <global offwidth="1280" offheight="720" />
+    <quality shadowsize="4096" />
+  </visual>
+  <default>
+    <default class="finger">
+      <geom friction="1.0 0.02 0.002" condim="4" rgba="0.1 0.8 0.3 0.35" solref="0.004 1" solimp="0.95 0.99 0.001" contype="2" conaffinity="2" group="3" />
+    </default>
+    <default class="object">
+      <geom friction="0.7 0.02 0.002" condim="4" contype="3" conaffinity="3" solref="0.004 1" solimp="0.95 0.99 0.001" />
+    </default>
+    <default class="static">
+      <geom contype="1" conaffinity="1" friction="0.9 0.01 0.001" />
+    </default>
+  </default>
+  <asset>
+    <texture name="sky" type="skybox" builtin="gradient" rgb1="0.75 0.8 0.88" rgb2="0.95 0.96 0.98" width="256" height="256" />
+    <texture name="board" type="2d" builtin="checker" rgb1="0.22 0.23 0.25" rgb2="0.25 0.26 0.28" width="512" height="512" />
+    <material name="board" texture="board" texrepeat="30 30" />
+    <material name="arm" rgba="0.62 0.2 0.08 1" />
+    <material name="servo" rgba="0.08 0.08 0.1 1" />
+    <material name="petg" rgba="0.16 0.18 0.21 1" />
+    <material name="deck" rgba="0.1 0.22 0.45 1" />
+    <material name="tyre" rgba="0.05 0.05 0.05 1" />
+    <material name="petg_tyre" rgba="0.55 0.57 0.6 1" />
+    <material name="hub" rgba="0.1 0.22 0.45 1" />
+    <material name="wood" rgba="0.86 0.74 0.55 1" />
+    <material name="wall" rgba="0.82 0.83 0.85 1" />
+    <material name="beige" rgba="0.9 0.8 0.62 1" />
+    <material name="blue" rgba="0.1 0.3 0.75 1" />
+    <material name="red" rgba="0.8 0.08 0.08 1" />
+    <material name="metal" rgba="0.7 0.7 0.72 1" />
+    <mesh name="MG996R_Nominal_R3" file="arm_src\meshes\MG996R_Nominal_R3.stl" />
+    <mesh name="Metal_Horn_D20_PCD14_R3" file="arm_src\meshes\Metal_Horn_D20_PCD14_R3.stl" />
+    <mesh name="Base_MG996R_R3" file="arm_src\meshes\Base_MG996R_R3.stl" />
+    <mesh name="Shoulder_MG996R_R3" file="arm_src\meshes\Shoulder_MG996R_R3.stl" />
+    <mesh name="Upper_arm_MG996R_R3" file="arm_src\meshes\Upper_arm_MG996R_R3.stl" />
+    <mesh name="Forearm_MG996R_R3" file="arm_src\meshes\Forearm_MG996R_R3.stl" />
+    <mesh name="Wrist_pitch_roll_MG996R_R3" file="arm_src\meshes\Wrist_pitch_roll_MG996R_R3.stl" />
+    <mesh name="Gripper_body_MG996R_R3" file="arm_src\meshes\Gripper_body_MG996R_R3.stl" />
+    <mesh name="Moving_jaw_MG996R_R3" file="arm_src\meshes\Moving_jaw_MG996R_R3.stl" />
+    <mesh name="RR-01_Chassis_Tub" file="..\cad\stl\RR-01_Chassis_Tub.STL" scale="0.001 0.001 0.001" />
+    <mesh name="RR-02_Deck_Plate" file="..\cad\stl\RR-02_Deck_Plate.STL" scale="0.001 0.001 0.001" />
+    <mesh name="RR-05_Wheel_Hub" file="..\cad\stl\RR-05_Wheel_Hub.STL" scale="0.001 0.001 0.001" />
+    <mesh name="RR-06_Wheel_Tyre" file="..\cad\stl\RR-06_Wheel_Tyre.STL" scale="0.001 0.001 0.001" />
+    <mesh name="ramp" vertex="-1.4 -0.8 0 -1.4 -0.501436 0.08 -1.4 -0.101436 0.08 -1.4 0.197128 0 -1 -0.8 0 -1 -0.501436 0.08 -1 -0.101436 0.08 -1 0.197128 0" />
+  </asset>
+  <worldbody>
+    <light pos="-1 -1 3" dir="0.3 0.3 -1" directional="true" castshadow="true" diffuse="0.8 0.8 0.8" />
+    <light pos="1 1 3" dir="-0.3 -0.3 -1" directional="true" castshadow="false" diffuse="0.35 0.35 0.35" />
+    <geom name="floor" type="plane" size="1.5 1.5 0.01" material="board" class="static" />
+    <geom name="ramp" class="static" type="mesh" mesh="ramp" material="wood" />
+    <geom name="breaker_0" class="static" type="cylinder" pos="-1.19375 0.257128 0" size="0.04 0.28125" quat="0.707107 0 0.707107 0" material="wood" />
+    <geom name="breaker_1" class="static" type="cylinder" pos="-1.19375 0.357128 0" size="0.04 0.28125" quat="0.707107 0 0.707107 0" material="wood" />
+    <geom name="breaker_2" class="static" type="cylinder" pos="-1.19375 0.457128 0" size="0.04 0.28125" quat="0.707107 0 0.707107 0" material="wood" />
+    <geom name="breaker_3" class="static" type="cylinder" pos="-1.19375 0.557128 0" size="0.04 0.28125" quat="0.707107 0 0.707107 0" material="wood" />
+    <geom name="wall_0" class="static" type="box" pos="-1.4875 0 0.03" size="0.0125 1.5 0.03" material="wall" />
+    <geom name="wall_1" class="static" type="box" pos="0 -1.4875 0.03" size="1.5 0.0125 0.03" material="wall" />
+    <geom name="wall_2" class="static" type="box" pos="-0.9 -0.2 0.03" size="0.0125 0.9 0.03" material="wall" />
+    <geom name="start_zone" type="box" pos="-1.25 -1.25 0.0005" size="0.225 0.225 0.0005" material="beige" contype="0" conaffinity="0" />
+    <geom name="pickup_spot" type="box" pos="-1.2 -0.925 0.0005" size="0.05 0.05 0.0005" material="beige" contype="0" conaffinity="0" />
+    <geom name="touchdown_80" type="box" pos="-1.15 0.96 0.0005" size="0.04 0.04 0.0005" material="beige" contype="0" conaffinity="0" />
+    <geom name="pole_post" class="static" type="box" pos="1.1 0.8 0.195" size="0.02 0.02 0.195" material="wood" />
+    <geom name="pole_top" class="static" type="box" pos="1.1 0.8 0.395" size="0.04 0.04 0.005" material="wood" />
+    <geom name="downy_target" type="box" pos="0.6 0.7 0.0005" size="0.05 0.05 0.0005" material="beige" contype="0" conaffinity="0" />
+    <body name="cube50" pos="-1.2 -0.925 0.0252">
+      <freejoint name="cube50" />
+      <geom name="cube50" type="box" size="0.025 0.025 0.025" mass="0.02" material="blue" class="object" />
+    </body>
+    <body name="cube60" pos="1.1 0.8 0.4302">
+      <freejoint name="cube60" />
+      <geom name="cube60" type="box" size="0.03 0.03 0.03" mass="0.03" material="blue" class="object" />
+    </body>
+    <body name="chassis" pos="0 0 0">
+      <freejoint name="chassis" />
+      <inertial pos="-0.000256516 0.00413553 0.0792554" mass="1.1887" diaginertia="0.00213411 0.00595341 0.00759223" />
+      <geom name="tub_visual" type="mesh" mesh="RR-01_Chassis_Tub" material="petg" contype="0" conaffinity="0" />
+      <geom name="deck_visual" type="mesh" mesh="RR-02_Deck_Plate" material="deck" contype="0" conaffinity="0" />
+      <geom name="col_tub" type="box" pos="0 0 0.0775" size="0.12 0.069 0.0205" rgba="1 0 0 0" contype="1" conaffinity="1" />
+      <geom name="col_deck" type="box" pos="0 0 0.1005" size="0.125 0.069 0.0025" rgba="1 0 0 0" contype="1" conaffinity="1" />
+      <geom name="col_motor_11" type="cylinder" pos="0.076 0.039 0.07" size="0.0125 0.028" quat="0.7071068 0.7071068 0 0" material="metal" contype="1" conaffinity="1" />
+      <geom name="col_motor_1-1" type="cylinder" pos="0.076 -0.039 0.07" size="0.0125 0.028" quat="0.7071068 0.7071068 0 0" material="metal" contype="1" conaffinity="1" />
+      <geom name="col_motor_-11" type="cylinder" pos="-0.076 0.039 0.07" size="0.0125 0.028" quat="0.7071068 0.7071068 0 0" material="metal" contype="1" conaffinity="1" />
+      <geom name="col_motor_-1-1" type="cylinder" pos="-0.076 -0.039 0.07" size="0.0125 0.028" quat="0.7071068 0.7071068 0 0" material="metal" contype="1" conaffinity="1" />
+      <geom name="kill_switch" type="box" pos="0.102 -0.04 0.107" size="0.0116 0.0156 0.004" material="red" contype="0" conaffinity="0" />
+      <site name="chassis_centre" pos="0 0 0.08" size="0.005" />
+      <body name="wheel_FL" pos="0.076 0.084 0.07">
+        <joint name="wheel_FL" type="hinge" axis="0 1 0" armature="0.004" damping="0.002" />
+        <inertial pos="0 0 0" mass="0.112" diaginertia="0.00026 0.00048 0.00026" />
+        <geom name="tyre_FL" type="cylinder" size="0.07 0.0125" quat="0.7071068 0.7071068 0 0" rgba="0 0 0 0" class="static" condim="6" priority="1" friction="0.35 0.01 0.001" />
+        <geom type="mesh" mesh="RR-05_Wheel_Hub" quat="0.7071068 -0.7071068 0 0" pos="0 -0.014 0" material="hub" contype="0" conaffinity="0" />
+        <geom type="mesh" mesh="RR-06_Wheel_Tyre" quat="0.7071068 -0.7071068 0 0" pos="0 -0.014 0" material="petg_tyre" contype="0" conaffinity="0" />
+      </body>
+      <body name="wheel_FR" pos="0.076 -0.084 0.07">
+        <joint name="wheel_FR" type="hinge" axis="0 1 0" armature="0.004" damping="0.002" />
+        <inertial pos="0 0 0" mass="0.112" diaginertia="0.00026 0.00048 0.00026" />
+        <geom name="tyre_FR" type="cylinder" size="0.07 0.0125" quat="0.7071068 0.7071068 0 0" rgba="0 0 0 0" class="static" condim="6" priority="1" friction="0.35 0.01 0.001" />
+        <geom type="mesh" mesh="RR-05_Wheel_Hub" quat="0.7071068 0.7071068 0 0" pos="0 0.014 0" material="hub" contype="0" conaffinity="0" />
+        <geom type="mesh" mesh="RR-06_Wheel_Tyre" quat="0.7071068 0.7071068 0 0" pos="0 0.014 0" material="petg_tyre" contype="0" conaffinity="0" />
+      </body>
+      <body name="wheel_RL" pos="-0.076 0.084 0.07">
+        <joint name="wheel_RL" type="hinge" axis="0 1 0" armature="0.004" damping="0.002" />
+        <inertial pos="0 0 0" mass="0.112" diaginertia="0.00026 0.00048 0.00026" />
+        <geom name="tyre_RL" type="cylinder" size="0.07 0.0125" quat="0.7071068 0.7071068 0 0" rgba="0 0 0 0" class="static" condim="6" priority="1" friction="0.9 0.01 0.001" />
+        <geom type="mesh" mesh="RR-05_Wheel_Hub" quat="0.7071068 -0.7071068 0 0" pos="0 -0.014 0" material="hub" contype="0" conaffinity="0" />
+        <geom type="mesh" mesh="RR-06_Wheel_Tyre" quat="0.7071068 -0.7071068 0 0" pos="0 -0.014 0" material="tyre" contype="0" conaffinity="0" />
+      </body>
+      <body name="wheel_RR" pos="-0.076 -0.084 0.07">
+        <joint name="wheel_RR" type="hinge" axis="0 1 0" armature="0.004" damping="0.002" />
+        <inertial pos="0 0 0" mass="0.112" diaginertia="0.00026 0.00048 0.00026" />
+        <geom name="tyre_RR" type="cylinder" size="0.07 0.0125" quat="0.7071068 0.7071068 0 0" rgba="0 0 0 0" class="static" condim="6" priority="1" friction="0.9 0.01 0.001" />
+        <geom type="mesh" mesh="RR-05_Wheel_Hub" quat="0.7071068 0.7071068 0 0" pos="0 0.014 0" material="hub" contype="0" conaffinity="0" />
+        <geom type="mesh" mesh="RR-06_Wheel_Tyre" quat="0.7071068 0.7071068 0 0" pos="0 0.014 0" material="tyre" contype="0" conaffinity="0" />
+      </body>
+      <body name="base_link" pos="-0.087 0 0.1054">
+        <inertial pos="0.0154038 -4.37154e-05 0.0269097" mass="0.15500" fullinertia="0.00012174 0.000132063 0.000142139 -4.11238e-07 8.1817e-06 1.23187e-07" />
+        <geom name="follower_sts3215_03a_v1_2" type="mesh" mesh="MG996R_Nominal_R3" pos="0.0263353 -8.97656999879322e-09 0.0437" quat="1 -4.15794949850208e-44 3.79822709827829e-65 -3.08148791101958e-33" contype="0" conaffinity="0" group="1" material="servo" />
+        <geom name="follower_Base_MG996R_R3" type="mesh" mesh="Base_MG996R_R3" pos="-0.00636471 -8.97657e-09 -0.0024" quat="0.500000000001687 0.499999999998313 0.500000000001687 0.499999999998313" contype="0" conaffinity="0" group="1" material="arm" />
+        <body name="shoulder_link" pos="0.0388353 -8.97657000000347e-09 0.0624" quat="2.06552080115807e-28 -6.12303176911189e-17 1 -3.37336286833877e-12">
+          <inertial pos="-0.0297665 0.0049463 -0.0208155" mass="0.11230" fullinertia="0.000112145 0.000112748 3.19009e-05 3.93202e-07 -1.91329e-06 1.2679e-05" />
+          <joint name="shoulder_pan" type="hinge" axis="0 0 1" limited="true" range="-1.48352986419518 1.48352986419518" armature="0.004" damping="0.05" frictionloss="0.01" />
+          <geom name="follower_sts3215_03a_v1_4" type="mesh" mesh="MG996R_Nominal_R3" pos="-0.0303992 0.000422241000000002 -0.0417" quat="0.5 0.5 0.5 -0.5" contype="0" conaffinity="0" group="1" material="servo" />
+          <geom name="follower_Shoulder_MG996R_R3" type="mesh" mesh="Shoulder_MG996R_R3" pos="0.0122008 2.22413e-05 0.0464" quat="0.707106781186548 -0.707106781186547 -4.3530962547384e-33 -4.35309625467354e-33" contype="0" conaffinity="0" group="1" material="arm" />
+          <geom name="follower_metal_horn_0" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="0.0125 1.39964063017479e-18 0.0187" quat="-6.16297582203915e-33 -6.12303176911189e-17 1 6.12303176911189e-17" contype="0" conaffinity="0" group="1" material="servo" />
+          <body name="upper_arm_link" pos="-0.0303992 -0.0182778 -0.0542" quat="0.5 -0.5 -0.5 -0.5">
+            <inertial pos="-0.0792238 -0.00725179 0.0212232" mass="0.13660" fullinertia="6.35648e-05 0.000242151 0.000226545 -3.33957e-05 3.10967e-05 6.71853e-06" />
+            <joint name="shoulder_lift" type="hinge" axis="0 0 1" limited="true" range="-1.39626340159546 1.39626340159546" armature="0.004" damping="0.05" frictionloss="0.01" />
+            <geom name="follower_sts3215_03a_v1_7" type="mesh" mesh="MG996R_Nominal_R3" pos="-0.11257 -0.0155 0.0187" quat="4.32963728535968e-17 0.707106781186548 -0.707106781186547 4.32963728535968e-17" contype="0" conaffinity="0" group="1" material="servo" />
+            <geom name="follower_Upper_arm_MG996R_R3" type="mesh" mesh="Upper_arm_MG996R_R3" pos="-0.065085 0.012 0.0182" quat="6.12303176911189e-17 1 0 0" contype="0" conaffinity="0" group="1" material="arm" />
+            <geom name="follower_metal_horn_1" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="0.0125 2.8421709430404e-17 0.018700041" quat="2.22044604925031e-16 6.12303176911189e-17 1 -6.12303176911189e-17" contype="0" conaffinity="0" group="1" material="servo" />
+            <body name="lower_arm_link" pos="-0.11257 -0.028 3.5527136788005e-18" quat="0.707106781186548 7.85046229341888e-17 7.85046229341887e-17 0.707106781186547">
+              <inertial pos="-0.0861467 0.00225139 0.0213258" mass="0.13020" fullinertia="4.21896e-05 0.000277132 0.000250151 1.12278e-05 3.51101e-05 -2.04309e-06" />
+              <joint name="elbow_flex" type="hinge" axis="0 0 1" limited="true" range="-1.39626340159546 1.39626340159546" armature="0.004" damping="0.05" frictionloss="0.01" />
+              <geom name="follower_sts3215_03a_v1_11" type="mesh" mesh="MG996R_Nominal_R3" pos="-0.1224 0.00519999999999996 0.0187" quat="-1.63015760731769e-32 -6.12303176911189e-17 1 -6.12303176911189e-17" contype="0" conaffinity="0" group="1" material="servo" />
+              <geom name="follower_Forearm_MG996R_R3" type="mesh" mesh="Forearm_MG996R_R3" pos="-0.0648499 -0.032 0.0182" quat="6.12303176911189e-17 1 1.68155815718978e-44 1.97419053915225e-39" contype="0" conaffinity="0" group="1" material="arm" />
+              <geom name="follower_metal_horn_2" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="0.0125 0 0.0186999999999998" quat="-7.91877026559471e-32 -2.8327492261615e-16 1 -2.8327492261615e-16" contype="0" conaffinity="0" group="1" material="servo" />
+              <body name="wrist_link" pos="-0.1349 0.00519999999999999 -1.06581410364015e-17" quat="0.707106781186548 7.85046229341888e-17 -7.85046229341887e-17 -0.707106781186547">
+                <inertial pos="-8.11626e-05 -0.0362719 0.0233292" mass="0.08120" fullinertia="4.54165e-05 2.59802e-05 2.75722e-05 -1.08738e-07 -2.77562e-08 9.00166e-06" />
+                <joint name="wrist_flex" type="hinge" axis="0 0 1" limited="true" range="-1.39626340159546 1.39626340159546" armature="0.004" damping="0.05" frictionloss="0.01" />
+                <geom name="follower_sts3215_03a_no_horn_v1_12" type="mesh" mesh="MG996R_Nominal_R3" pos="8.5265128291212e-17 -0.0504 0.0306" quat="0.5 0.5 0.5 -0.5" contype="0" conaffinity="0" group="1" material="servo" />
+                <geom name="follower_Wrist_pitch_roll_MG996R_R3" type="mesh" mesh="Wrist_pitch_roll_MG996R_R3" pos="0 -0.028 0.0181" quat="0.5 -0.5 -0.5 -0.5" contype="0" conaffinity="0" group="1" material="arm" />
+                <geom name="follower_metal_horn_3" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="0 0.0125 0.0187" quat="-4.32963728535968e-17 0.707106781186548 -0.707106781186547 -4.32963728535968e-17" contype="0" conaffinity="0" group="1" material="servo" />
+                <body name="gripper_link" pos="1.13686837721616e-16 -0.0691 0.0181" quat="0.0172091029770778 -0.0172091029770778 0.706897338214485 0.706897338214485">
+                  <inertial pos="0.000497533 -0.005432 -0.0237637" mass="0.09880" fullinertia="4.063e-05 5.93468e-05 4.3896e-05 4.62979e-06 -7.72057e-06 2.1487e-07" />
+                  <joint name="wrist_roll" type="hinge" axis="0 0 1" limited="true" range="-1.48352986419518 1.48352986419518" armature="0.004" damping="0.05" frictionloss="0.01" />
+                  <geom name="follower_sts3215_03a_v1_14" type="mesh" mesh="MG996R_Nominal_R3" pos="0.00769999999999999 0.000100000000000001 -0.0234" quat="0.707106781186548 -0.707106781186547 -7.87953377839742e-20 2.37447412890945e-18" contype="0" conaffinity="0" group="1" material="servo" />
+                  <geom name="follower_Gripper_body_MG996R_R3" type="mesh" mesh="Gripper_body_MG996R_R3" pos="8.5265128291212e-17 -0.000218213999999998 0.000949705999999992" quat="-6.12303176911189e-17 1 1.73472347597681e-18 -9.24093221276131e-34" contype="0" conaffinity="0" group="1" material="arm" />
+                  <geom name="follower_metal_horn_4" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="-0.000608253454377717 0.0124851923387362 0.0187" quat="-3.65905124752447e-16 0.724106441191563 -0.689688235237408 -3.48512933180878e-16" contype="0" conaffinity="0" group="1" material="servo" />
+                  <body name="moving_jaw_so101_v1_link" pos="0.0202 0.0188 -0.0234" quat="0.707106781186548 0.707106781186547 0 0">
+                    <inertial pos="-0.00111236 -0.0210513 0.0117041" mass="0.01960" fullinertia="1.24591e-05 2.70558e-06 1.08214e-05 -6.08255e-07 1.58403e-07 2.91771e-06" />
+                    <joint name="gripper" type="hinge" axis="0 0 1" limited="true" range="0 1.22173047639603" armature="0.004" damping="0.05" frictionloss="0.01" />
+                    <geom name="follower_Moving_jaw_MG996R_R3" type="mesh" mesh="Moving_jaw_MG996R_R3" pos="0 -5.6843418860808e-17 0.0189" quat="1 -1.11608871664749e-33 1.73472347597681e-18 -2.15727897140433e-33" contype="0" conaffinity="0" group="1" material="arm" />
+                    <geom name="follower_metal_horn_5" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="-0.0124999999999999 0 0.0187" quat="-2.8327492261615e-16 1 -4.5533341455196e-33 -1.73472347597681e-18" contype="0" conaffinity="0" group="1" material="servo" />
+                    <geom name="finger_jaw_0" type="box" pos="-0.00128456 -0.047 0.0189" quat="0 0 -0.707107 0.707107" size="0.00701544 0.00859161 0.007" class="finger" />
+                    <geom name="finger_jaw_1" type="box" pos="-0.00298374 -0.061 0.0189115" quat="0 0 -0.707107 0.707107" size="0.00731626 0.00764145 0.007" class="finger" />
+                    <geom name="finger_jaw_2" type="box" pos="-0.00662366 -0.075 0.0189005" quat="0 0 -0.707107 0.707107" size="0.00567634 0.00645946 0.007" class="finger" />
+                  </body>
+                  <site name="tool" pos="-0.0079 -0.000218121 -0.0981274" quat="0 0 1 0" size="0.004" rgba="1 0 0 0.6" />
+                  <geom name="finger_fixed_0" type="box" pos="-0.0197783 -0.000255028 -0.0694253" quat="0 0 1 0" size="0.00817829 0.00873037 0.007" class="finger" />
+                  <geom name="finger_fixed_1" type="box" pos="-0.016474 -0.000218214 -0.0834253" quat="0 0 1 0" size="0.00657396 0.0077459 0.007" class="finger" />
+                  <geom name="finger_fixed_2" type="box" pos="-0.0127412 -0.000218221 -0.0974253" quat="0 0 1 0" size="0.0048412 0.00645591 0.007" class="finger" />
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor name="m_FL" joint="wheel_FL" ctrlrange="-1 1" gear="1" />
+    <motor name="m_FR" joint="wheel_FR" ctrlrange="-1 1" gear="1" />
+    <motor name="m_RL" joint="wheel_RL" ctrlrange="-1 1" gear="1" />
+    <motor name="m_RR" joint="wheel_RR" ctrlrange="-1 1" gear="1" />
+    <position name="s_shoulder_pan" joint="shoulder_pan" kp="30.0" kv="0.6" forcerange="-1.08 1.08" ctrlrange="-1.5 1.5" />
+    <position name="s_shoulder_lift" joint="shoulder_lift" kp="30.0" kv="0.6" forcerange="-1.08 1.08" ctrlrange="-1.5 1.5" />
+    <position name="s_elbow_flex" joint="elbow_flex" kp="30.0" kv="0.6" forcerange="-1.08 1.08" ctrlrange="-1.5 1.5" />
+    <position name="s_wrist_flex" joint="wrist_flex" kp="30.0" kv="0.6" forcerange="-1.08 1.08" ctrlrange="-1.5 1.5" />
+    <position name="s_wrist_roll" joint="wrist_roll" kp="30.0" kv="0.6" forcerange="-1.08 1.08" ctrlrange="-1.5 1.5" />
+    <position name="s_gripper" joint="gripper" kp="3.0" kv="0.15" forcerange="-1.08 1.08" ctrlrange="-1.5 1.5" />
+  </actuator>
+  <sensor>
+    <framepos name="tool_pos" objtype="site" objname="tool" />
+  </sensor>
+</mujoco>

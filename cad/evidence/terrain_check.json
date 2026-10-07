@@ -1,0 +1,368 @@
+{
+ "ramp_foot": {
+  "rear_axle_x_on_profile_mm": -96.0,
+  "pitch_deg": 6.52,
+  "chassis_terrain_interference": [],
+  "tyre_contact_overlaps": [],
+  "pass": true
+ },
+ "on_ramp": {
+  "rear_axle_x_on_profile_mm": 120.0,
+  "pitch_deg": 15.02,
+  "chassis_terrain_interference": [],
+  "tyre_contact_overlaps": [
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   }
+  ],
+  "pass": true
+ },
+ "ramp_crest": {
+  "rear_axle_x_on_profile_mm": 258.6,
+  "pitch_deg": 3.12,
+  "chassis_terrain_interference": [],
+  "tyre_contact_overlaps": [
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   }
+  ],
+  "pass": true
+ },
+ "bridge": {
+  "rear_axle_x_on_profile_mm": 498.6,
+  "pitch_deg": 0.0,
+  "chassis_terrain_interference": [],
+  "tyre_contact_overlaps": [
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-1"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-1"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-2"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-2"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-1"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-2"
+    ],
+    "volume_mm3": 0.0
+   }
+  ],
+  "pass": true
+ },
+ "bridge_exit": {
+  "rear_axle_x_on_profile_mm": 668.6,
+  "pitch_deg": -11.16,
+  "chassis_terrain_interference": [],
+  "tyre_contact_overlaps": [
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   }
+  ],
+  "pass": true
+ },
+ "down_ramp_foot": {
+  "rear_axle_x_on_profile_mm": 917.1,
+  "pitch_deg": 5.88,
+  "chassis_terrain_interference": [],
+  "tyre_contact_overlaps": [],
+  "pass": true
+ },
+ "front_on_breaker_1": {
+  "rear_axle_x_on_profile_mm": 905.1,
+  "pitch_deg": 4.88,
+  "chassis_terrain_interference": [],
+  "tyre_contact_overlaps": [],
+  "pass": true
+ },
+ "breaker_under_belly": {
+  "rear_axle_x_on_profile_mm": 1081.1,
+  "pitch_deg": 0.02,
+  "chassis_terrain_interference": [],
+  "tyre_contact_overlaps": [
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   }
+  ],
+  "pass": true
+ },
+ "rear_on_breaker_4": {
+  "rear_axle_x_on_profile_mm": 1357.1,
+  "pitch_deg": -15.24,
+  "chassis_terrain_interference": [],
+  "tyre_contact_overlaps": [
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-4"
+    ],
+    "volume_mm3": 0.0
+   },
+   {
+    "components": [
+     "RA-01_Arena_Board-1",
+     "Thenar_Walker-1/RR-06_Wheel_Tyre-3"
+    ],
+    "volume_mm3": 0.0
+   }
+  ],
+  "pass": true
+ },
+ "_summary": {
+  "all_pass": true
+ }
+}

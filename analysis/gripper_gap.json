@@ -1,0 +1,62 @@
+{
+ "0": {
+  "tip_to_tip_mm": 20.0,
+  "inner_gap_15mm_from_tip": 19.7
+ },
+ "5": {
+  "tip_to_tip_mm": 25.0,
+  "inner_gap_15mm_from_tip": 25.4
+ },
+ "10": {
+  "tip_to_tip_mm": 32.1,
+  "inner_gap_15mm_from_tip": 31.1
+ },
+ "15": {
+  "tip_to_tip_mm": 39.2,
+  "inner_gap_15mm_from_tip": 36.8
+ },
+ "20": {
+  "tip_to_tip_mm": 46.1,
+  "inner_gap_15mm_from_tip": 42.5
+ },
+ "25": {
+  "tip_to_tip_mm": 53.2,
+  "inner_gap_15mm_from_tip": 47.9
+ },
+ "30": {
+  "tip_to_tip_mm": 59.9,
+  "inner_gap_15mm_from_tip": 53.2
+ },
+ "35": {
+  "tip_to_tip_mm": 66.7,
+  "inner_gap_15mm_from_tip": 60.1
+ },
+ "40": {
+  "tip_to_tip_mm": 73.2,
+  "inner_gap_15mm_from_tip": 63.8
+ },
+ "45": {
+  "tip_to_tip_mm": 79.8,
+  "inner_gap_15mm_from_tip": 69.2
+ },
+ "50": {
+  "tip_to_tip_mm": 86.2,
+  "inner_gap_15mm_from_tip": 72.2
+ },
+ "55": {
+  "tip_to_tip_mm": 92.2,
+  "inner_gap_15mm_from_tip": 74.1
+ },
+ "60": {
+  "tip_to_tip_mm": 98.3,
+  "inner_gap_15mm_from_tip": 79.0
+ },
+ "65": {
+  "tip_to_tip_mm": 104.0,
+  "inner_gap_15mm_from_tip": 77.3
+ },
+ "70": {
+  "tip_to_tip_mm": 109.6,
+  "inner_gap_15mm_from_tip": 70.4
+ }
+}

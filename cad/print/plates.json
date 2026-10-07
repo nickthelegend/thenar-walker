@@ -1,0 +1,242 @@
+{
+ "bed_mm": 256.0,
+ "plates": [
+  {
+   "file": "P1S_Rover_1_Tub_Cage_Bars.3mf",
+   "material": "PETG",
+   "settings": "Bambu PETG / generic PETG, 0.2 mm layers, 4 walls, 30 % gyroid, textured PEI plate, no supports, brim off (tub: 5 mm brim if corners lift)",
+   "parts": [
+    "RR-01_Chassis_Tub",
+    "RR-03_Battery_Cradle",
+    "RR-04_Battery_Bar",
+    "RR-04_Battery_Bar"
+   ],
+   "max_height_mm": 43.0,
+   "min_gap_mm": 12.0,
+   "filament_g_est": 194.0
+  },
+  {
+   "file": "P1S_Rover_2_Deck.3mf",
+   "material": "PETG",
+   "settings": "Bambu PETG / generic PETG, 0.2 mm layers, 4 walls, 30 % gyroid, textured PEI plate, no supports, brim off (tub: 5 mm brim if corners lift)",
+   "parts": [
+    "RR-02_Deck_Plate"
+   ],
+   "max_height_mm": 11.0,
+   "min_gap_mm": 0,
+   "filament_g_est": 118.0
+  },
+  {
+   "file": "P1S_Rover_3_FrontWheel_RearHub_A_PRINT_FIRST.3mf",
+   "material": "PETG",
+   "settings": "Bambu PETG / generic PETG, 0.2 mm layers, 4 walls, 30 % gyroid, textured PEI plate, no supports, brim off (tub: 5 mm brim if corners lift)",
+   "parts": [
+    "RR-07_Front_Wheel_PETG",
+    "RR-05_Wheel_Hub"
+   ],
+   "max_height_mm": 28.0,
+   "min_gap_mm": 21.6,
+   "filament_g_est": 190.0
+  },
+  {
+   "file": "P1S_Rover_4_FrontWheel_RearHub_B.3mf",
+   "material": "PETG",
+   "settings": "Bambu PETG / generic PETG, 0.2 mm layers, 4 walls, 30 % gyroid, textured PEI plate, no supports, brim off (tub: 5 mm brim if corners lift)",
+   "parts": [
+    "RR-07_Front_Wheel_PETG",
+    "RR-05_Wheel_Hub"
+   ],
+   "max_height_mm": 28.0,
+   "min_gap_mm": 21.6,
+   "filament_g_est": 190.0
+  },
+  {
+   "file": "P1S_Rover_4b_FrontWheel_RearHub_6mm_shaft.3mf",
+   "material": "PETG",
+   "settings": "Bambu PETG / generic PETG, 0.2 mm layers, 4 walls, 30 % gyroid, textured PEI plate, no supports, brim off (tub: 5 mm brim if corners lift)",
+   "parts": [
+    "RR-07_Front_Wheel_PETG_6mm",
+    "RR-05_Wheel_Hub_6mm"
+   ],
+   "max_height_mm": 28.0,
+   "min_gap_mm": 21.6,
+   "filament_g_est": 190.0
+  },
+  {
+   "file": "P1S_Rover_5F_FlatTyreStrips_2tyres_TPU.3mf",
+   "material": "TPU 95A",
+   "settings": "TPU 95A, 0.2 mm layers, 3 walls, 20 % gyroid, max 3.6 mm^3/s (~30 mm/s), no supports, dry the filament first",
+   "parts": [
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half"
+   ],
+   "max_height_mm": 6.0,
+   "min_gap_mm": 20.0,
+   "filament_g_est": 79.0
+  },
+  {
+   "file": "P1S_Rover_5G_FlatTyreStrips_4tyres_TPU.3mf",
+   "material": "TPU 95A",
+   "settings": "TPU 95A, 0.2 mm layers, 3 walls, 20 % gyroid, max 3.6 mm^3/s (~30 mm/s), no supports, dry the filament first",
+   "parts": [
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half",
+    "RR-06F_Tyre_Strip_Half"
+   ],
+   "max_height_mm": 6.0,
+   "min_gap_mm": 6.0,
+   "filament_g_est": 159.0
+  },
+  {
+   "file": "P1S_Rover_5_RearTyres_TPU.3mf",
+   "material": "TPU 95A",
+   "settings": "TPU 95A, 0.2 mm layers, 3 walls, 20 % gyroid, max 3.6 mm^3/s (~30 mm/s), no supports, dry the filament first",
+   "parts": [
+    "RR-06_Wheel_Tyre",
+    "RR-06_Wheel_Tyre"
+   ],
+   "max_height_mm": 25.0,
+   "min_gap_mm": 11.4,
+   "filament_g_est": 81.0
+  }
+ ],
+ "parts": {
+  "tub": {
+   "stl": "RR-01_Chassis_Tub.STL",
+   "material": "PETG",
+   "orientation": "floor on the bed, walls up",
+   "size_mm": [
+    240.0,
+    138.0,
+    43.0
+   ],
+   "volume_cm3": 250.7,
+   "unsupported_overhang_mm2": 1163.9,
+   "largest_overhang_face_mm2": 32.0
+  },
+  "deck": {
+   "stl": "RR-02_Deck_Plate.STL",
+   "material": "PETG",
+   "orientation": "flat underside on the bed, fence up",
+   "size_mm": [
+    250.0,
+    138.0,
+    11.0
+   ],
+   "volume_cm3": 169.2,
+   "unsupported_overhang_mm2": 0.0,
+   "largest_overhang_face_mm2": 0.0
+  },
+  "cage": {
+   "stl": "RR-03_Battery_Cradle.STL",
+   "material": "PETG",
+   "orientation": "open box, floor tabs on the bed",
+   "size_mm": [
+    51.0,
+    114.0,
+    27.0
+   ],
+   "volume_cm3": 24.3,
+   "unsupported_overhang_mm2": 98.8,
+   "largest_overhang_face_mm2": 5.6
+  },
+  "bar": {
+   "stl": "RR-04_Battery_Bar.STL",
+   "material": "PETG",
+   "orientation": "flat",
+   "size_mm": [
+    48.0,
+    10.0,
+    3.0
+   ],
+   "volume_cm3": 1.4,
+   "unsupported_overhang_mm2": 0.0,
+   "largest_overhang_face_mm2": 0.0
+  },
+  "hub": {
+   "stl": "RR-05_Wheel_Hub.STL",
+   "material": "PETG",
+   "orientation": "web (inner face) on the bed",
+   "size_mm": [
+    131.0,
+    131.0,
+    28.0
+   ],
+   "volume_cm3": 104.8,
+   "unsupported_overhang_mm2": 813.4,
+   "largest_overhang_face_mm2": 2.8
+  },
+  "front_wheel": {
+   "stl": "RR-07_Front_Wheel_PETG.STL",
+   "material": "PETG",
+   "orientation": "one piece, inner face on the bed",
+   "size_mm": [
+    140.0,
+    140.0,
+    28.0
+   ],
+   "volume_cm3": 167.6,
+   "unsupported_overhang_mm2": 1885.6,
+   "largest_overhang_face_mm2": 3.1
+  },
+  "tyre_tpu": {
+   "stl": "RR-06_Wheel_Tyre.STL",
+   "material": "TPU 95A",
+   "orientation": "ring standing on its edge",
+   "size_mm": [
+    140.0,
+    140.0,
+    25.0
+   ],
+   "volume_cm3": 60.5,
+   "unsupported_overhang_mm2": 1377.6,
+   "largest_overhang_face_mm2": 0.7
+  },
+  "tyre_strip": {
+   "stl": "RR-06F_Tyre_Strip_Half.STL",
+   "material": "TPU 95A",
+   "orientation": "flat strip, inner face on the bed, tread up",
+   "size_mm": [
+    224.3,
+    25.0,
+    6.0
+   ],
+   "volume_cm3": 29.8,
+   "unsupported_overhang_mm2": 0.0,
+   "largest_overhang_face_mm2": 0.0
+  },
+  "hub_6mm": {
+   "stl": "RR-05_Wheel_Hub_6mm.STL",
+   "material": "PETG",
+   "orientation": "web (inner face) on the bed",
+   "size_mm": [
+    131.0,
+    131.0,
+    28.0
+   ],
+   "volume_cm3": 104.3,
+   "unsupported_overhang_mm2": 809.7,
+   "largest_overhang_face_mm2": 2.8
+  },
+  "front_wheel_6mm": {
+   "stl": "RR-07_Front_Wheel_PETG_6mm.STL",
+   "material": "PETG",
+   "orientation": "one piece, inner face on the bed",
+   "size_mm": [
+    140.0,
+    140.0,
+    28.0
+   ],
+   "volume_cm3": 167.1,
+   "unsupported_overhang_mm2": 1881.9,
+   "largest_overhang_face_mm2": 3.1
+  }
+ }
+}

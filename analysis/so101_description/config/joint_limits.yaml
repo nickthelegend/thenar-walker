@@ -1,0 +1,51 @@
+status: Source software limits, not physical travel certification; table collisions
+  documented
+joint_limits:
+  shoulder_pan:
+    has_position_limits: true
+    min_position: -1.4835298641951802
+    max_position: 1.4835298641951802
+    has_velocity_limits: true
+    max_velocity: 0.17453292519943295
+    has_effort_limits: false
+    max_effort: null
+  shoulder_lift:
+    has_position_limits: true
+    min_position: -1.3962634015954636
+    max_position: 1.3962634015954636
+    has_velocity_limits: true
+    max_velocity: 0.17453292519943295
+    has_effort_limits: false
+    max_effort: null
+  elbow_flex:
+    has_position_limits: true
+    min_position: -1.3962634015954636
+    max_position: 1.3962634015954636
+    has_velocity_limits: true
+    max_velocity: 0.17453292519943295
+    has_effort_limits: false
+    max_effort: null
+  wrist_flex:
+    has_position_limits: true
+    min_position: -1.3962634015954636
+    max_position: 1.3962634015954636
+    has_velocity_limits: true
+    max_velocity: 0.17453292519943295
+    has_effort_limits: false
+    max_effort: null
+  wrist_roll:
+    has_position_limits: true
+    min_position: -1.4835298641951802
+    max_position: 1.4835298641951802
+    has_velocity_limits: true
+    max_velocity: 0.17453292519943295
+    has_effort_limits: false
+    max_effort: null
+  gripper:
+    has_position_limits: true
+    min_position: 0.0
+    max_position: 1.2217304763960306
+    has_velocity_limits: true
+    max_velocity: 0.17453292519943295
+    has_effort_limits: false
+    max_effort: null

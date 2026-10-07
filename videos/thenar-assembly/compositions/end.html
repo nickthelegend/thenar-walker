@@ -1,0 +1,27 @@
+<template id="end">
+  <div data-hf-id="hf-t4jx" id="end-root" data-composition-id="end" data-width="1920" data-height="1080" style="position:absolute;inset:0;">
+    <style>
+      .card { position: absolute; left: 96px; bottom: 150px; display: flex; flex-direction: column; gap: 14px; width: 1100px; font-family: "IBM Plex Mono", monospace; color: #e9eef3; }
+      .card .kicker { font-size: 26px; color: #e07a3f; letter-spacing: 0.22em; font-weight: 700; }
+      .card h1 { font-family: "Oswald", sans-serif; font-size: 168px; line-height: 0.92; font-weight: 700; letter-spacing: -0.01em; text-transform: uppercase; }
+      .card p { font-size: 30px; color: #9fb0c2; max-width: 900px; line-height: 1.4; }
+      .card h1 { font-size: 132px; }
+      .pair { display: flex; gap: 48px; font-size: 40px; font-weight: 700; color: #e9eef3; letter-spacing: 0.06em; }
+      .pair span:first-child { color: #e07a3f; }
+    </style>
+    <div data-hf-id="hf-k1bu" class="card" id="end-card">
+      <div data-hf-id="hf-270b" class="kicker" id="end-kicker">BUILT · WIRED · READY TO DRIVE</div>
+      <h1 data-hf-id="hf-6sp8" id="end-h1">Thenar Walker</h1>
+      <div data-hf-id="hf-vt1w" class="pair"><span data-hf-id="hf-9zvx" class="end-word">THENAR.IO</span><span data-hf-id="hf-9wot" class="end-word">THENARLABS</span></div>
+    </div>
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        tl.fromTo("#end-kicker", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 1.4);
+        tl.fromTo("#end-h1", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.9, ease: "expo.out" }, 1.7);
+        tl.fromTo(".end-word", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.6, stagger: 0.3, ease: "back.out(1.5)" }, 2.6);
+        window.__timelines["end"] = tl;
+      })();
+    </script>
+  </div>
+</template>

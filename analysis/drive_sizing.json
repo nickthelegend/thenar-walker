@@ -1,0 +1,18 @@
+{
+ "mass_for_sizing_kg": 2.61,
+ "ramp_force_N": 9.16,
+ "wheel_torque_total_Nm": 0.641,
+ "per_motor_kgcm_4wd": 1.63,
+ "per_motor_kgcm_2_driving": 3.27,
+ "rated_kgcm": 2.7,
+ "stall_kgcm": 8.2,
+ "margin_4wd_vs_rated": 1.65,
+ "margin_2wd_vs_stall": 2.51,
+ "speed_rated_m_s": 0.34,
+ "speed_free_m_s": 0.44,
+ "battery_current_avg_A": 3.11,
+ "battery_current_peak_A": 10.61,
+ "runtime_avg_min_2200mAh_80pct": 34.0,
+ "servo_6V_peak_A": 8.4,
+ "fuse_A": 15
+}

@@ -1,0 +1,40 @@
+  t=  0.01s  phase engage       robot (-1.200, -1.250)  fw state 1
+  t=  0.41s  phase unfold       robot (-1.200, -1.250)  fw state 1
+  t=  2.39s  phase approach     robot (-1.200, -1.250)  fw state 1
+  t=  4.22s  phase descend      robot (-1.200, -1.182)  fw state 1
+  t=  5.68s  phase grip         robot (-1.200, -1.184)  fw state 1
+  t=  6.69s  phase lift         robot (-1.200, -1.181)  fw state 1
+  t=  7.66s  phase carry        robot (-1.200, -1.178)  fw state 1
+  t=  8.30s  phase course       robot (-1.200, -1.178)  fw state 1
+  t= 68.30s  phase align        robot (-1.201, +0.267)  fw state 1
+  t= 88.90s  phase lower        robot (-1.201, +0.267)  fw state 1
+  t= 92.46s  phase release      robot (-1.201, +0.238)  fw state 1
+  t=105.28s  phase retract      robot (-1.201, +0.238)  fw state 1
+  t=106.65s  phase done         robot (-1.201, +0.238)  fw state 1
+PASS Robot never tips (|roll| < 25 deg, |pitch| < 25 deg) — max |pitch| 15.7 deg, max |roll| 0.1 deg
+PASS Chassis / motors never touch an obstacle (only tyres do) — no contacts
+PASS Pickup: cube lifted clear of the ground — max cube height 307 mm
+PASS Cube held by the gripper the whole way (no drop) — 8480 samples from pickup to touchdown, 0 with the cube > 20 mm from the grasp point
+PASS Climbed the 15 deg ramp and crossed the 400 mm bridge — max chassis lift 80.0 mm (bridge = 80)
+FAIL Drove down and over all four 40 mm speed breakers — rear axle passed y = 0.597 m
+FAIL Placed completely inside the 80 x 80 mm square — cube centre offset (-17.6, -282.8) mm, z 25.0 mm
+  event {'t': 2.38, 'event': 'approach_error_mm', 'value': np.float64(1.535616446820709)}
+  event {'t': 7.65, 'event': 'cube50_in_hand_offset_mm', 'value': [-24.8, 0.0, 4.6]}
+  event {'t': 7.65, 'event': 'cube50_lifted_to_mm', 'value': 106.6}
+  event {'t': 7.65, 'event': 'ik_unreachable', 'target': [0.19, 0.0, 0.2], 'err_mm': 4.678071301449962}
+  event {'t': 68.29, 'event': 'place_align_error_mm', 'value': np.float64(421.7908661601282)}
+  event {'t': 88.89, 'event': 'cube50_in_hand_offset_mm', 'value': [-25.3, 0.1, 15.5]}
+  event {'t': 88.89, 'event': 'ik_unreachable', 'target': [0.6767908661601282, -0.05053753517488256, 0.065], 'err_mm': 281.07364932890744}
+  event {'t': 91.2, 'event': 'ik_unreachable', 'target': [0.9912918147550154, -0.07009940610857118, 0.065], 'err_mm': 589.4816467610392}
+  event {'t': 91.53, 'event': 'ik_unreachable', 'target': [1.2984838270351247, -0.09028025224768647, 0.065], 'err_mm': 894.1770520874069}
+  event {'t': 91.73, 'event': 'ik_unreachable', 'target': [1.6031475290357982, -0.11034338331932464, 0.065], 'err_mm': 1197.6372499247002}
+  event {'t': 91.87, 'event': 'ik_unreachable', 'target': [1.9065775884484983, -0.13037311173275026, 0.065], 'err_mm': 1500.4947165244018}
+  event {'t': 91.99, 'event': 'ik_unreachable', 'target': [1.9065775884484983, -0.13037311173275026, 0.031], 'err_mm': 1503.5938894594449}
+  event {'t': 92.11, 'event': 'ik_unreachable', 'target': [2.210293064127915, -0.15052158451189118, 0.031], 'err_mm': 1806.6544371070063}
+  event {'t': 92.22, 'event': 'ik_unreachable', 'target': [2.5131553805247724, -0.17063854379803564, 0.031], 'err_mm': 2109.195823679019}
+  event {'t': 92.32, 'event': 'ik_unreachable', 'target': [2.815700173351089, -0.19074678929902264, 0.031], 'err_mm': 2411.639349415633}
+  event {'t': 92.39, 'event': 'ik_unreachable', 'target': [3.118115489267374, -0.2108630129147867, 0.031], 'err_mm': 2714.104151748845}
+  event {'t': 92.43, 'event': 'ik_unreachable', 'target': [3.118115489267374, -0.2108630129147867, 0.026500000000000003], 'err_mm': 2714.3803067258336}
+  event {'t': 93.51, 'event': 'ik_unreachable', 'target': [0.3513595143959897, -0.027400697271958672, -0.052365869233599364], 'err_mm': 67.74090499299965}
+  event {'t': 102.34, 'event': 'ik_unreachable', 'target': [0.29674898005079414, -0.023679712451020903, 0.05869266038242842], 'err_mm': 7.8464560666977095}
+scenario A: FAILURES in 107.6 s simulated

@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="so101_structural_template_PHYSICS_BLOCKED">
+  <!-- PHYSICS BLOCKED: insert measured link inertials before loading. inertiafromgeom=false deliberately prevents silent invented masses. See README.md and ../inertial_properties.yaml. -->
+  <compiler angle="radian" meshdir="meshes" inertiafromgeom="false" />
+  <asset>
+    <mesh name="MG996R_Nominal_R3" file="MG996R_Nominal_R3.stl" />
+    <mesh name="Base_MG996R_R3" file="Base_MG996R_R3.stl" />
+    <mesh name="Shoulder_MG996R_R3" file="Shoulder_MG996R_R3.stl" />
+    <mesh name="Metal_Horn_D20_PCD14_R3" file="Metal_Horn_D20_PCD14_R3.stl" />
+    <mesh name="Upper_arm_MG996R_R3" file="Upper_arm_MG996R_R3.stl" />
+    <mesh name="Forearm_MG996R_R3" file="Forearm_MG996R_R3.stl" />
+    <mesh name="Wrist_pitch_roll_MG996R_R3" file="Wrist_pitch_roll_MG996R_R3.stl" />
+    <mesh name="Gripper_body_MG996R_R3" file="Gripper_body_MG996R_R3.stl" />
+    <mesh name="Moving_jaw_MG996R_R3" file="Moving_jaw_MG996R_R3.stl" />
+  </asset>
+  <worldbody>
+    <body name="base_link">
+      <!-- Physical inertial element intentionally absent: UNVERIFIED. -->
+      <geom name="follower_sts3215_03a_v1_2" type="mesh" mesh="MG996R_Nominal_R3" pos="0.0263353 -8.97656999879322e-09 0.0437" quat="1 -4.15794949850208e-44 3.79822709827829e-65 -3.08148791101958e-33" contype="0" conaffinity="0" group="2" />
+      <geom name="follower_Base_MG996R_R3" type="mesh" mesh="Base_MG996R_R3" pos="-0.00636471 -8.97657e-09 -0.0024" quat="0.500000000001687 0.499999999998313 0.500000000001687 0.499999999998313" contype="0" conaffinity="0" group="2" />
+      <body name="shoulder_link" pos="0.0388353 -8.97657000000347e-09 0.0624" quat="2.06552080115807e-28 -6.12303176911189e-17 1 -3.37336286833877e-12">
+        <joint name="shoulder_pan" type="hinge" axis="0 0 1" limited="true" range="-1.48352986419518 1.48352986419518" />
+        <!-- Physical inertial element intentionally absent: UNVERIFIED. -->
+        <geom name="follower_sts3215_03a_v1_4" type="mesh" mesh="MG996R_Nominal_R3" pos="-0.0303992 0.000422241000000002 -0.0417" quat="0.5 0.5 0.5 -0.5" contype="0" conaffinity="0" group="2" />
+        <geom name="follower_Shoulder_MG996R_R3" type="mesh" mesh="Shoulder_MG996R_R3" pos="0.0122008 2.22413e-05 0.0464" quat="0.707106781186548 -0.707106781186547 -4.3530962547384e-33 -4.35309625467354e-33" contype="0" conaffinity="0" group="2" />
+        <geom name="follower_metal_horn_0" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="0.0125 1.39964063017479e-18 0.0187" quat="-6.16297582203915e-33 -6.12303176911189e-17 1 6.12303176911189e-17" contype="0" conaffinity="0" group="2" />
+        <body name="upper_arm_link" pos="-0.0303992 -0.0182778 -0.0542" quat="0.5 -0.5 -0.5 -0.5">
+          <joint name="shoulder_lift" type="hinge" axis="0 0 1" limited="true" range="-1.39626340159546 1.39626340159546" />
+          <!-- Physical inertial element intentionally absent: UNVERIFIED. -->
+          <geom name="follower_sts3215_03a_v1_7" type="mesh" mesh="MG996R_Nominal_R3" pos="-0.11257 -0.0155 0.0187" quat="4.32963728535968e-17 0.707106781186548 -0.707106781186547 4.32963728535968e-17" contype="0" conaffinity="0" group="2" />
+          <geom name="follower_Upper_arm_MG996R_R3" type="mesh" mesh="Upper_arm_MG996R_R3" pos="-0.065085 0.012 0.0182" quat="6.12303176911189e-17 1 0 0" contype="0" conaffinity="0" group="2" />
+          <geom name="follower_metal_horn_1" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="0.0125 2.8421709430404e-17 0.018700041" quat="2.22044604925031e-16 6.12303176911189e-17 1 -6.12303176911189e-17" contype="0" conaffinity="0" group="2" />
+          <body name="lower_arm_link" pos="-0.11257 -0.028 3.5527136788005e-18" quat="0.707106781186548 7.85046229341888e-17 7.85046229341887e-17 0.707106781186547">
+            <joint name="elbow_flex" type="hinge" axis="0 0 1" limited="true" range="-1.39626340159546 1.39626340159546" />
+            <!-- Physical inertial element intentionally absent: UNVERIFIED. -->
+            <geom name="follower_sts3215_03a_v1_11" type="mesh" mesh="MG996R_Nominal_R3" pos="-0.1224 0.00519999999999996 0.0187" quat="-1.63015760731769e-32 -6.12303176911189e-17 1 -6.12303176911189e-17" contype="0" conaffinity="0" group="2" />
+            <geom name="follower_Forearm_MG996R_R3" type="mesh" mesh="Forearm_MG996R_R3" pos="-0.0648499 -0.032 0.0182" quat="6.12303176911189e-17 1 1.68155815718978e-44 1.97419053915225e-39" contype="0" conaffinity="0" group="2" />
+            <geom name="follower_metal_horn_2" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="0.0125 0 0.0186999999999998" quat="-7.91877026559471e-32 -2.8327492261615e-16 1 -2.8327492261615e-16" contype="0" conaffinity="0" group="2" />
+            <body name="wrist_link" pos="-0.1349 0.00519999999999999 -1.06581410364015e-17" quat="0.707106781186548 7.85046229341888e-17 -7.85046229341887e-17 -0.707106781186547">
+              <joint name="wrist_flex" type="hinge" axis="0 0 1" limited="true" range="-1.39626340159546 1.39626340159546" />
+              <!-- Physical inertial element intentionally absent: UNVERIFIED. -->
+              <geom name="follower_sts3215_03a_no_horn_v1_12" type="mesh" mesh="MG996R_Nominal_R3" pos="8.5265128291212e-17 -0.0504 0.0306" quat="0.5 0.5 0.5 -0.5" contype="0" conaffinity="0" group="2" />
+              <geom name="follower_Wrist_pitch_roll_MG996R_R3" type="mesh" mesh="Wrist_pitch_roll_MG996R_R3" pos="0 -0.028 0.0181" quat="0.5 -0.5 -0.5 -0.5" contype="0" conaffinity="0" group="2" />
+              <geom name="follower_metal_horn_3" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="0 0.0125 0.0187" quat="-4.32963728535968e-17 0.707106781186548 -0.707106781186547 -4.32963728535968e-17" contype="0" conaffinity="0" group="2" />
+              <body name="gripper_link" pos="1.13686837721616e-16 -0.0691 0.0181" quat="0.0172091029770778 -0.0172091029770778 0.706897338214485 0.706897338214485">
+                <joint name="wrist_roll" type="hinge" axis="0 0 1" limited="true" range="-1.48352986419518 1.48352986419518" />
+                <!-- Physical inertial element intentionally absent: UNVERIFIED. -->
+                <geom name="follower_sts3215_03a_v1_14" type="mesh" mesh="MG996R_Nominal_R3" pos="0.00769999999999999 0.000100000000000001 -0.0234" quat="0.707106781186548 -0.707106781186547 -7.87953377839742e-20 2.37447412890945e-18" contype="0" conaffinity="0" group="2" />
+                <geom name="follower_Gripper_body_MG996R_R3" type="mesh" mesh="Gripper_body_MG996R_R3" pos="8.5265128291212e-17 -0.000218213999999998 0.000949705999999992" quat="-6.12303176911189e-17 1 1.73472347597681e-18 -9.24093221276131e-34" contype="0" conaffinity="0" group="2" />
+                <geom name="follower_metal_horn_4" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="-0.000608253454377717 0.0124851923387362 0.0187" quat="-3.65905124752447e-16 0.724106441191563 -0.689688235237408 -3.48512933180878e-16" contype="0" conaffinity="0" group="2" />
+                <body name="moving_jaw_so101_v1_link" pos="0.0202 0.0188 -0.0234" quat="0.707106781186548 0.707106781186547 0 0">
+                  <joint name="gripper" type="hinge" axis="0 0 1" limited="true" range="0 1.22173047639603" />
+                  <!-- Physical inertial element intentionally absent: UNVERIFIED. -->
+                  <geom name="follower_Moving_jaw_MG996R_R3" type="mesh" mesh="Moving_jaw_MG996R_R3" pos="0 -5.6843418860808e-17 0.0189" quat="1 -1.11608871664749e-33 1.73472347597681e-18 -2.15727897140433e-33" contype="0" conaffinity="0" group="2" />
+                  <geom name="follower_metal_horn_5" type="mesh" mesh="Metal_Horn_D20_PCD14_R3" pos="-0.0124999999999999 0 0.0187" quat="-2.8327492261615e-16 1 -4.5533341455196e-33 -1.73472347597681e-18" contype="0" conaffinity="0" group="2" />
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.181.2/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/"
+        }
+      }
+    </script>
+    <script src="assets/scene.js"></script>
+    <style>
+      /* Concept: an engineering manual that builds itself — a dark workshop bench, copper accent from the arm,
+         condensed Oswald for step titles, IBM Plex Mono for every part, screw and pin name. */
+      :root {
+        --bg: #0e141b;
+        --panel: #141d27;
+        --fg: #e9eef3;
+        --dim: #9fb0c2;
+        --accent: #e07a3f;
+        --line: #2b3a4b;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: "IBM Plex Mono", monospace; color: var(--fg); }
+      #glow { position: absolute; inset: 0; background: radial-gradient(60% 55% at 62% 55%, rgba(224, 122, 63, 0.16), rgba(14, 20, 27, 0) 70%); }
+      #three-layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      #wire-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+      #labels { position: absolute; inset: 0; pointer-events: none; }
+      .tag { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: rgba(16, 24, 33, 0.92);
+             border: 2px solid var(--accent); border-radius: 6px; font-size: 22px; font-weight: 700; letter-spacing: 0.01em; color: var(--fg); white-space: nowrap; opacity: 0; }
+      .tag small { font-weight: 400; color: var(--dim); font-size: 20px; }
+      .tag.wire { border-color: var(--wc, var(--accent)); }
+
+      /* HUD: step card, left */
+      .step { position: absolute; left: 48px; top: 48px; width: 700px; display: flex; flex-direction: column; gap: 18px; padding: 30px 34px 34px;
+             background: rgba(14, 20, 27, 0.86); border: 2px solid var(--line); border-radius: 10px; }
+      .step .num { font-size: 24px; font-weight: 700; color: var(--accent); letter-spacing: 0.18em; }
+      .step h2 { font-family: "Oswald", sans-serif; font-weight: 700; font-size: 78px; line-height: 0.98; letter-spacing: -0.01em; color: var(--fg); text-transform: uppercase; }
+      .step ul { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+      .step li { font-size: 25px; line-height: 1.32; color: var(--fg); padding-left: 26px; position: relative; }
+      .step li::before { content: ""; position: absolute; left: 0; top: 13px; width: 12px; height: 3px; background: var(--accent); }
+      .step li b { color: var(--accent); font-weight: 700; }
+      .rule { width: 100%; height: 3px; background: var(--line); }
+      .rule i { display: block; width: 100%; height: 100%; background: var(--accent); transform-origin: left center; }
+
+      /* progress rail, bottom */
+      #rail { position: absolute; left: 48px; right: 48px; bottom: 36px; display: flex; gap: 10px; padding: 14px 24px; background: rgba(14, 20, 27, 0.86); border: 2px solid var(--line); border-radius: 10px; }
+      #rail div { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+      #rail span { display: block; height: 6px; background: var(--line); border-radius: 3px; }
+      #rail em { font-style: normal; font-size: 18px; color: var(--dim); letter-spacing: 0.06em; }
+      #rail div.on span { background: var(--accent); }
+      #rail div.on em { color: var(--fg); }
+      #brand { position: absolute; right: 72px; top: 64px; font-size: 22px; color: var(--dim); letter-spacing: 0.12em; text-align: right; }
+
+      /* title + end cards */
+      .card { position: absolute; left: 96px; bottom: 150px; display: flex; flex-direction: column; gap: 14px; width: 1100px; }
+      .card .kicker { font-size: 26px; color: var(--accent); letter-spacing: 0.22em; font-weight: 700; }
+      .card h1 { font-family: "Oswald", sans-serif; font-size: 168px; line-height: 0.92; font-weight: 700; letter-spacing: -0.01em; text-transform: uppercase; }
+      .card p { font-size: 30px; color: var(--dim); max-width: 900px; line-height: 1.4; }
+      .end h1 { font-size: 132px; }
+      .end .pair { display: flex; gap: 48px; font-size: 40px; font-weight: 700; color: var(--fg); letter-spacing: 0.06em; }
+      .end .pair span:first-child { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-8cvg" id="root" data-composition-id="main" data-start="0" data-duration="240" data-width="1920" data-height="1080">
+      <div data-hf-id="hf-27c6" id="glow"></div>
+      <canvas data-hf-id="hf-wnnd" id="three-layer" data-layout-allow-overflow=""></canvas>
+      <svg data-hf-id="hf-z9z6" id="wire-svg" viewBox="0 0 1920 1080" />
+      <div data-hf-id="hf-33rw" id="labels"></div>
+      <div data-hf-id="hf-kvri" id="brand">THENAR WALKER · ROBOREACH 2026-27</div>
+
+      <div data-hf-id="hf-t74f" id="title-host" data-composition-id="title" data-composition-src="compositions/title.html" data-start="0" data-duration="10" data-track-index="2"></div>
+
+      <!-- step cards (filled by script from STEPS) -->
+      <div data-hf-id="hf-djjy" id="steps"></div>
+
+      <div data-hf-id="hf-6c82" id="end-host" data-composition-id="end" data-composition-src="compositions/end.html" data-start="232" data-duration="8" data-track-index="2"></div>
+
+      <div data-hf-id="hf-gvf1" id="rail"></div>
+    </div>
+
+    <script>
+      // ------------------------------------------------------------------ steps (times in seconds)
+      window.TW_STEPS = [
+        { id: "kit", n: "THE KIT", t0: 10, t1: 22.5, title: "Everything you need",
+          items: ["Printed: <b>tub</b>, <b>battery cage</b>, <b>2 bars</b>, <b>4 wheels</b>, <b>2 TPU tyres</b>",
+                  "<b>4</b> × 370 gear motors (M8 collar, 13 mm nut)", "<b>3 mm wooden deck</b>, Cytron <b>MDD10A</b>, ESP32, PCA9685, 2 bucks",
+                  "Kill switch, 3S LiPo, the <b>thenar-arms</b> follower"] },
+        { id: "s1", n: "STEP 01", t0: 22.5, t1: 37, title: "Tub + inserts",
+          items: ["Print plate 1: <b>PETG</b>, 4 walls, 30 % infill", "Melt <b>4 × M3 heat-set inserts</b> into the corner bores (Ø4, 8 deep)",
+                  "Logos face out: <b>THENAR.IO</b> front, <b>THENARLABS</b> rear"] },
+        { id: "s2", n: "STEP 02", t0: 37, t1: 75, title: "Four motors",
+          items: ["Motor goes in from <b>inside</b> the tub", "M8 collar through the <b>Ø8.6 wall hole</b>",
+                  "<b>13 mm nut</b> from outside, into the Ø26 pocket", "Solder the leads first · left pair, then right pair"] },
+        { id: "s3", n: "STEP 03", t0: 75, t1: 89, title: "Battery cage",
+          items: ["Cage runs <b>front-to-back</b>, right of centre", "<b>2 × M3 × 8</b> + nyloc nut from <b>below</b> the floor"] },
+        { id: "s4", n: "STEP 04", t0: 89, t1: 109, title: "Floor boards",
+          items: ["<b>6 V buck</b> (servos) · <b>PCA9685</b> · <b>5 V buck</b> (ESP32)", "<b>M2.5 × 6</b> self-tapping into the 3 mm posts",
+                  "Set <b>6.0 V</b> and <b>5.0 V</b> on the bench <b>before</b> wiring"] },
+        { id: "s5", n: "STEP 05", t0: 109, t1: 133, title: "Wheels + tyres",
+          items: ["Rear: click 2 TPU strips, glue, wrap the <b>hub</b>", "Front: <b>hard one-piece</b> wheels (they let it turn)",
+                  "Push on the <b>Ø6 shaft</b>, ~1 mm off the wall", "Lock with an <b>M3 × 5 grub</b> on the cross-hole"] },
+        { id: "s6", n: "STEP 06", t0: 133, t1: 143, title: "Battery",
+          items: ["3S LiPo 2200 into the cage, lead to the <b>+Y end</b>", "<b>2 bars</b> on top: <b>M3 × 8</b> self-tapping"] },
+        { id: "s7", n: "STEP 07", t0: 143, t1: 167, title: "Wooden deck",
+          items: ["Kill switch <b>snaps in</b> (22.2 × 30.2 cut-out)", "ESP32 hangs below on <b>2 × M2.5 × 10</b> brass standoffs",
+                  "MDD10A on <b>6 mm spacers</b>, terminals <b>forward</b>", "Deck onto the tub: <b>4 × M3 × 10</b> into the inserts"] },
+        { id: "s8", n: "STEP 08", t0: 167, t1: 181, title: "The arm",
+          items: ["thenar-arms follower in <b>STOW</b>", "<b>4 × M3 × 20</b> + washer through the base vent slots",
+                  "<b>Nyloc nuts</b> under the deck"] },
+        { id: "s9", n: "STEP 09", t0: 181, t1: 205, title: "Power path",
+          items: ["LiPo → <b>XT60</b> → <b>10 A fuse</b> → <b>kill switch</b>", "→ MDD10A <b>B+ / B−</b> (motors)",
+                  "→ <b>6 V buck</b> → PCA9685 <b>V+</b> (servos)", "→ <b>5 V buck</b> → ESP32 <b>5V</b> · all grounds common"] },
+        { id: "s10", n: "STEP 10", t0: 205, t1: 217, title: "Motors → driver",
+          items: ["<b>FL + RL</b> in parallel → <b>M1A / M1B</b>", "<b>FR + RR</b> in parallel → <b>M2A / M2B</b>",
+                  "Same wire of each motor into the same terminal"] },
+        { id: "s11", n: "STEP 11", t0: 217, t1: 232, title: "Signals",
+          items: ["GPIO <b>25 / 26</b> → PWM1 / DIR1 · <b>16 / 17</b> → PWM2 / DIR2 · <b>GND</b>", "GPIO <b>21 / 22</b> → PCA9685 SDA / SCL · <b>13</b> → OE",
+                  "Servos J1…J6 → PCA9685 <b>ch 0…5</b>", "GPIO <b>34</b> ← battery divider 100k / 27k"] },
+      ];
+    </script>
+
+    <script>
+      // ------------------------------------------------------------------ HUD: step cards + rail (GSAP owns the overlay motion)
+      (function () {
+        const host = document.getElementById("steps");
+        const rail = document.getElementById("rail");
+        const tl = gsap.timeline({ paused: true });
+        window.TW_STEPS.forEach((s, i) => {
+          const el = document.createElement("div");
+          el.id = "card-" + s.id;
+          el.className = "clip step";
+          el.dataset.start = s.t0;
+          el.dataset.duration = (s.t1 - s.t0).toFixed(2);
+          el.dataset.trackIndex = "3";
+          el.innerHTML = `<div class="num">${s.n}</div><h2>${s.title}</h2><div class="rule"><i></i></div><ul>${s.items.map((t) => `<li>${t}</li>`).join("")}</ul>`;
+          host.appendChild(el);
+          const num = el.querySelector(".num"), h2 = el.querySelector("h2"), bar = el.querySelector(".rule i"), lis = el.querySelectorAll("li");
+          tl.fromTo(num, { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, s.t0 + 0.1);
+          tl.fromTo(h2, { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.6, ease: "expo.out" }, s.t0 + 0.2);
+          tl.fromTo(bar, { scaleX: 0 }, { scaleX: 1, duration: 0.9, ease: "power2.inOut" }, s.t0 + 0.35);
+          tl.fromTo(lis, { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: 0.5, ease: "back.out(1.6)", stagger: 0.55 }, s.t0 + 0.7);
+          tl.to(el, { opacity: 0, duration: 0.4, ease: "power1.in" }, s.t1 - 0.45);
+          const r = document.createElement("div");
+          r.innerHTML = `<span></span><em>${s.id === "kit" ? "KIT" : s.n.replace("STEP ", "")}</em>`;
+          rail.appendChild(r);
+          tl.fromTo(r.querySelector("span"), { backgroundColor: "#2b3a4b" }, { backgroundColor: "#e07a3f", duration: 0.4, ease: "power1.out" }, s.t0);
+          tl.fromTo(r.querySelector("em"), { color: "#9fb0c2" }, { color: "#e9eef3", duration: 0.4 }, s.t0);
+        });
+        tl.fromTo("#rail", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 10.2);
+        tl.to("#rail", { opacity: 0, duration: 0.6 }, 231.4);
+        tl.fromTo("#glow", { scale: 1, opacity: 0.8 }, { scale: 1.12, opacity: 1, duration: 120, ease: "sine.inOut", yoyo: true, repeat: 1 }, 0);
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+      const W = 1920, H = 1080;
+      const S = window.TW_SCENE;
+      const STEPS = window.TW_STEPS;
+      const canvas = document.getElementById("three-layer");
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+      renderer.setSize(W, H, false);
+      renderer.setPixelRatio(1);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(30, W / H, 0.01, 10);
+      camera.setViewOffset(W, H, -300, 0, W, H);           // frame the robot right of centre, clear of the step panel
+
+      scene.add(new THREE.HemisphereLight(0xdfe8f2, 0x2a3440, 1.6));
+      const key = new THREE.DirectionalLight(0xfff1e6, 2.6); key.position.set(0.8, 1.4, 0.9); scene.add(key);
+      const rim = new THREE.DirectionalLight(0xffb27a, 1.2); rim.position.set(-1.0, 0.6, -0.8); scene.add(rim);
+      const fill = new THREE.DirectionalLight(0x9fc3ff, 0.6); fill.position.set(-0.4, 0.3, 1.0); scene.add(fill);
+
+      // bench: a disc floor + fine grid
+      const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 96), new THREE.MeshStandardMaterial({ color: 0x18222d, roughness: 0.95, metalness: 0 }));
+      floor.rotation.x = -Math.PI / 2; floor.position.y = -0.0005; scene.add(floor);
+      const grid = new THREE.GridHelper(1.6, 64, 0x2e4256, 0x223140); grid.position.y = 0.0002; scene.add(grid);
+
+      const COLORS = {
+        petg_blue: [0x2f6db5, 0.55, 0.0], petg_grey: [0x8e99a6, 0.6, 0.0], brass: [0xc9a227, 0.35, 0.8], gearbox_white: [0xe9ecef, 0.5, 0.0],
+        can_silver: [0xb8bec6, 0.3, 0.9], cap_yellow: [0xf2c230, 0.5, 0.0], steel: [0x9aa1a9, 0.3, 0.9], lipo: [0x34507a, 0.5, 0.1],
+        pcb_green: [0x1f7a3a, 0.6, 0.1], pcb_blue: [0x1d4f91, 0.6, 0.1], pcb_black: [0x1d2228, 0.5, 0.2], wood: [0xc99a62, 0.85, 0.0],
+        switch_red: [0xc0392b, 0.45, 0.0], terminal_blue: [0x2a6fdb, 0.5, 0.0], header_white: [0xf0f0f0, 0.5, 0.0], nylon: [0xe4dfcf, 0.6, 0.0],
+        pla_grey: [0xc9ced6, 0.55, 0.0], tpu_black: [0x24272b, 0.9, 0.0], arm_copper: [0xb8531f, 0.45, 0.1], servo_dark: [0x2a2d33, 0.5, 0.2],
+      };
+      const mat = (key) => { const [c, r, m] = COLORS[key] || [0x888888, 0.5, 0]; return new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, transparent: true, opacity: 1 }); };
+
+      // robot mm (Z-up) -> three metres (Y-up)
+      const V = (x, y, z) => new THREE.Vector3(x / 1000, z / 1000, -y / 1000);
+      const ease = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+      const clamp01 = (u) => Math.max(0, Math.min(1, u));
+      const prog = (t, a, b) => clamp01((t - a) / (b - a));
+
+      const parts = {};     // name -> { obj, base: Vector3 (center), meta }
+      const arm = [];       // { obj, frames: {STOW: Matrix4, ...} }
+
+      // ------------------------------------------------------------------ assembly events (robot mm offsets)
+      const MOTOR = (k) => [`motor_${k}_gearbox`, `motor_${k}_can`, `motor_${k}_cap`, `motor_${k}_collar`, `motor_${k}_shaft`];
+      const DECK = ["deck", "kill_switch", "esp32", "esp32_standoff_1", "esp32_standoff_2", "mdd10a", "mdd10a_terminals", "mdd10a_header",
+                    "mdd10a_spacer_1", "mdd10a_spacer_2", "mdd10a_spacer_3", "mdd10a_spacer_4"];
+      const EV = [];
+      const ev = (names, t0, t1, off, spin) => names.forEach((n) => EV.push({ n, t0, t1, off, spin }));
+      // step 1
+      ev(["tub"], 23.0, 25.5, [0, 0, 120]);
+      [1, 2, 3, 4].forEach((i) => ev([`insert_${i}`], 27 + i * 1.6, 29 + i * 1.6, [0, 0, 70], { ax: "z", turns: 2 }));
+      // step 2: motor from inside (toward the centre, raised), then the nut from outside with a spin
+      const mot = [["FL", 1, 39], ["RL", 1, 48], ["FR", -1, 57], ["RR", -1, 66]];
+      mot.forEach(([k, sy, t]) => {
+        ev(MOTOR(k), t, t + 4.2, [0, -sy * 30, 70]);
+        ev([`nut_${k}`], t + 4.4, t + 7.6, [0, sy * 45, 0], { ax: "y", turns: 4 });
+      });
+      // step 3
+      ev(["cage"], 76.5, 80, [0, 0, 110]);
+      ev(["cage_screw_1", "cage_screw_2"], 81, 84.5, [0, 0, -45], { ax: "z", turns: 3 });
+      // step 4
+      [["buck6v", 90.5], ["pca9685", 95.5], ["buck5v", 100.5]].forEach(([b, t]) => {
+        ev([b], t, t + 2.4, [0, 0, 90]);
+        [1, 2, 3, 4].forEach((j) => ev([`${b}_screw_${j}`], t + 2.5 + j * 0.35, t + 3.6 + j * 0.35, [0, 0, 40], { ax: "z", turns: 3 }));
+      });
+      // step 5
+      ev(["tyre_RL"], 110.5, 113.5, [0, 70, 0]); ev(["tyre_RR"], 111, 114, [0, -70, 0]);
+      ev(["hub_RL"], 110.5, 110.6, [0, 70, 0]); ev(["hub_RR"], 111, 111.1, [0, -70, 0]);
+      [["wheel_FL", 1, 116], ["wheel_FR", -1, 119], ["hub_RL", 1, 122], ["hub_RR", -1, 125]].forEach(([w, sy, t]) => {
+        const extra = w.startsWith("hub") ? [w.replace("hub", "tyre")] : [];
+        [w, ...extra].forEach((n) => EV.push({ n, t0: t, t1: t + 3, off: [0, sy * 90, 0], spin: { ax: "y", turns: 0.5 } }));
+      });
+      // step 6
+      ev(["battery"], 134.5, 138, [0, 0, 110]);
+      ev(["bar_1", "bar_2"], 138.5, 141, [0, 0, 50]);
+      // step 7 (deck parts first assemble while the deck floats 120 mm up, then the deck group lowers)
+      ev(["deck"], 144, 146, [0, 0, 260]);
+      ev(["kill_switch"], 146.5, 149, [0, 0, 330]);
+      ev(["esp32_standoff_1", "esp32_standoff_2"], 149.5, 151, [0, 0, 180]);
+      ev(["esp32"], 151, 153.5, [0, 0, 140]);
+      ev(["mdd10a_spacer_1", "mdd10a_spacer_2", "mdd10a_spacer_3", "mdd10a_spacer_4"], 154, 155.5, [0, 0, 330]);
+      ev(["mdd10a", "mdd10a_terminals", "mdd10a_header"], 155.5, 158, [0, 0, 330]);
+      [1, 2, 3, 4].forEach((j) => ev([`deck_screw_${j}`], 163 + j * 0.5, 164.5 + j * 0.5, [0, 0, 40], { ax: "z", turns: 3 }));
+      const DECK_LIFT = (t) => (t < 159 ? 120 : 120 * (1 - ease(prog(t, 159, 162.5))));
+      // step 8
+      const ARM_DROP = (t) => 160 * (1 - ease(prog(t, 168.5, 173.5)));
+      [1, 2, 3, 4].forEach((j) => ev([`arm_screw_${j}`], 174 + j * 0.8, 175.6 + j * 0.8, [0, 0, 45], { ax: "z", turns: 3 }));
+      const SHOW_ARM_AT = 168.5;
+
+      // ------------------------------------------------------------------ wires (robot mm way-points), drawn in the wiring steps
+      const RED = 0xe0453a, BLK = 0x23272d, YEL = 0xf2c230, ORG = 0xe07a3f, BLU = 0x4c8dff, GRN = 0x3ccf7a, WHT = 0xe9eef3, PUR = 0xb07cff;
+      const WIRES = [
+        // step 9 power
+        { t0: 183, t1: 186, c: RED, pts: [[31, 50, 80], [31, 59, 86], [31, 59, 93]], tag: ["battery +", "3S LiPo · 11.1 V"] },
+        { t0: 185.5, t1: 188, c: RED, pts: [[31, 59, 93], [12, 59, 93]], tag: ["XT60 → 10 A fuse", "inline, by the battery"] },
+        { t0: 187.5, t1: 191, c: RED, pts: [[12, 59, 93], [-9, 59, 93], [-9, 59, 73], [-9, 52, 73]], tag: ["kill switch IN", "cuts everything"] },
+        { t0: 191, t1: 196, c: RED, pts: [[-9, 42, 73], [-9, 42, 95], [104, 42, 95], [104, 37.7, 95], [104, 37.7, 116], [91, 37.7, 116]], tag: ["MDD10A B+", "motor power"] },
+        { t0: 191.5, t1: 196.5, c: BLK, pts: [[33, 50, 80], [36, 61, 88], [100, 61, 96], [100, 32.5, 96], [100, 32.5, 113], [91, 32.5, 113]], tag: ["MDD10A B−", "battery −"] },
+        { t0: 196, t1: 199.5, c: RED, pts: [[-9, 42, 73], [-20, 42, 73], [-20, 2, 73], [-20, 2, 70]], tag: ["6 V buck IN", "XL4016 · set 6.0 V"] },
+        { t0: 199, t1: 202, c: ORG, pts: [[-36, 2, 72], [-36, 10, 78], [-25, 27, 78], [-25, 27, 75]], tag: ["PCA9685 V+", "servo rail 6 V"] },
+        { t0: 200.5, t1: 203.5, c: RED, pts: [[-9, 42, 73], [-30, 42, 70], [-30, 50, 67]], tag: ["5 V buck IN", "MP1584 · set 5.0 V"] },
+        { t0: 202, t1: 204.8, c: ORG, pts: [[-50, 50, 67], [-60, 40, 80], [-60, -30, 86], [-57, -30, 86]], tag: ["ESP32 5V", "logic supply"] },
+        // step 10 motors -> driver
+        { t0: 206, t1: 209.5, c: RED, pts: [[77, 7, 74], [77, 7, 93], [100, 7, 93], [100, 42.9, 93], [100, 42.9, 113], [91, 42.9, 113]], tag: ["FL → M1A", ""] },
+        { t0: 206.5, t1: 211, c: RED, pts: [[-77, 7, 74], [-77, 7, 92], [100, 9, 92], [100, 44, 92], [100, 44, 112], [91, 43.5, 112]], tag: ["RL → M1A", "parallel with FL"] },
+        { t0: 207, t1: 210.5, c: BLK, pts: [[77, 5, 68], [80, 5, 91], [102, 5, 91], [102, 48.1, 91], [102, 48.1, 115], [91, 48.1, 115]], tag: ["M1B", "left motors −"] },
+        { t0: 209.5, t1: 213, c: GRN, pts: [[77, -7, 74], [77, -7, 93], [102, -7, 93], [102, 27.3, 93], [102, 27.3, 113], [91, 27.3, 113]], tag: ["FR → M2A", ""] },
+        { t0: 210, t1: 214.5, c: GRN, pts: [[-77, -7, 74], [-77, -7, 92], [104, -9, 92], [104, 26, 92], [104, 26, 112], [91, 26.5, 112]], tag: ["RR → M2A", "parallel with FR"] },
+        { t0: 210.5, t1: 214, c: BLK, pts: [[77, -5, 68], [80, -5, 91], [106, -5, 91], [106, 22.1, 91], [106, 22.1, 115], [91, 22.1, 115]], tag: ["M2B", "right motors −"] },
+        // step 11 signals
+        { t0: 218, t1: 222, c: YEL, pts: [[-14, -30, 86], [-11, -5, 92], [-11, -5, 108], [0, 37.5, 114], [10.5, 37.5, 114]], tag: ["GPIO25 → PWM1", "GPIO26 → DIR1"] },
+        { t0: 218.6, t1: 222.6, c: BLU, pts: [[-14, -28, 86], [-12, -3, 92], [-12, -3, 107], [0, 32.5, 113], [10.5, 32.5, 113]], tag: ["GPIO16 → PWM2", "GPIO17 → DIR2"] },
+        { t0: 219.2, t1: 223.2, c: BLK, pts: [[-14, -26, 86], [-10, -1, 92], [-10, -1, 106], [0, 30, 112], [10.5, 30, 112]], tag: ["GND → header pin 1", "must be connected"] },
+        { t0: 222.5, t1: 225.5, c: PUR, pts: [[-40, -16, 86], [-50, 0, 80], [-56, 18.5, 74]], tag: ["GPIO21 / 22 → SDA / SCL", "GPIO13 → OE"] },
+        { t0: 225, t1: 229, c: WHT, pts: [[-25, 12, 76], [-15, 6, 84], [-11, 0, 96], [-11, 0, 108], [-60, 0, 112], [-80, 0, 112]], tag: ["6 servo leads → J1…J6", "PCA9685 ch 0…5"] },
+        { t0: 227.5, t1: 230.5, c: PUR, pts: [[-9, 42, 73], [-5, 0, 80], [-3, -30, 86]], tag: ["GPIO34 ← 100k / 27k", "battery sense"] },
+      ];
+      const wireObjs = [];
+
+      // ------------------------------------------------------------------ 3D labels (anchor: part name or robot-mm point)
+      const LABELS = [
+        { t0: 2, t1: 9, at: "deck", txt: "3 mm wooden deck", sub: "", dx: 260, dy: -160 },
+        { t0: 2.6, t1: 9, at: "kill_switch", txt: "kill switch", sub: "", dx: -320, dy: -110 },
+        { t0: 23.5, t1: 36.5, at: "tub", txt: "RR-01 tub v2", sub: "240 × 138 × 43", dx: 260, dy: 120 },
+        { t0: 28, t1: 36.5, at: "insert_1", txt: "M3 heat-set insert", sub: "× 4", dx: 120, dy: -150 },
+        { t0: 40, t1: 47.5, at: "motor_FL_gearbox", txt: "370 gear motor", sub: "Ø37.5 gearbox", dx: 220, dy: -160 },
+        { t0: 44, t1: 56.5, at: "nut_FL", txt: "M8 nut, 13 mm", sub: "in the Ø26 pocket", dx: -360, dy: 130 },
+        { t0: 58, t1: 74.5, at: "motor_FR_gearbox", txt: "collar through the wall", sub: "Ø8.6 hole", dx: 200, dy: -170 },
+        { t0: 77, t1: 88.5, at: "cage", txt: "battery cage", sub: "PETG", dx: 220, dy: -150 },
+        { t0: 81.5, t1: 88.5, at: "cage_screw_1", txt: "M3 × 8 + nyloc", sub: "from below", dx: -330, dy: 140 },
+        { t0: 91, t1: 108.5, at: "buck6v", txt: "6 V buck ≥ 10 A", sub: "servos", dx: -380, dy: -120 },
+        { t0: 96, t1: 108.5, at: "pca9685", txt: "PCA9685", sub: "16-ch servo driver", dx: 210, dy: -170 },
+        { t0: 101, t1: 108.5, at: "buck5v", txt: "5 V buck MP1584", sub: "ESP32", dx: 200, dy: -60 },
+        { t0: 111, t1: 132.5, at: "tyre_RL", txt: "TPU tyre", sub: "rear only", dx: -320, dy: -140 },
+        { t0: 116.5, t1: 132.5, at: "wheel_FL", txt: "hard front wheel", sub: "Ø140 · Ø6 bore", dx: 200, dy: -170 },
+        { t0: 135, t1: 142.5, at: "battery", txt: "3S LiPo 2200", sub: "106 × 34 × 26", dx: 230, dy: -150 },
+        { t0: 147, t1: 166.5, at: "kill_switch", txt: "kill switch", sub: "KCD4", dx: -330, dy: -120 },
+        { t0: 151.5, t1: 166.5, at: "esp32", txt: "ESP32 under the deck", sub: "", dx: -380, dy: 120 },
+        { t0: 156, t1: 166.5, at: "mdd10a", txt: "Cytron MDD10A", sub: "terminals forward", dx: 220, dy: -170 },
+        { t0: 169, t1: 180.5, at: "arm_screw_3", txt: "M3 × 20 + nyloc", sub: "× 4", dx: 240, dy: 120 },
+      ];
+      const labelHost = document.getElementById("labels");
+      const svg = document.getElementById("wire-svg");
+      const mkTag = (txt, sub, cls) => { const d = document.createElement("div"); d.className = "tag " + (cls || ""); d.innerHTML = txt + (sub ? ` <small>${sub}</small>` : ""); labelHost.appendChild(d); return d; };
+      const mkLine = () => { const l = document.createElementNS("http://www.w3.org/2000/svg", "polyline"); l.setAttribute("fill", "none"); l.setAttribute("stroke", "#e07a3f"); l.setAttribute("stroke-width", "2.5"); svg.appendChild(l); const c = document.createElementNS("http://www.w3.org/2000/svg", "circle"); c.setAttribute("r", "6"); c.setAttribute("fill", "#e07a3f"); svg.appendChild(c); return { l, c }; };
+      LABELS.forEach((L) => { L.el = mkTag(L.txt, L.sub); Object.assign(L, mkLine()); });
+
+      // ------------------------------------------------------------------ camera path (three metres)
+      const CAM = [
+        [10, [0.86, 0.58, 0.86], [0, 0.16, 0]], [22, [0.74, 0.48, 0.74], [0, 0.11, 0]],
+        [24, [0.46, 0.33, 0.40], [0, 0.07, 0]], [36, [0.40, 0.36, 0.34], [0, 0.07, 0]],
+        [39, [0.22, 0.34, -0.46], [0.03, 0.07, -0.03]], [56, [-0.20, 0.34, -0.46], [-0.03, 0.07, -0.03]],
+        [58, [0.22, 0.34, 0.46], [0.03, 0.07, 0.03]], [74, [-0.20, 0.34, 0.46], [-0.03, 0.07, 0.03]],
+        [77, [0.30, 0.50, 0.16], [0.02, 0.07, 0]], [88, [0.24, 0.48, 0.24], [0.02, 0.07, 0]],
+        [90, [-0.12, 0.46, 0.30], [-0.03, 0.07, -0.01]], [108, [-0.20, 0.44, 0.22], [-0.03, 0.07, -0.01]],
+        [110, [-0.50, 0.28, -0.62], [-0.03, 0.07, -0.02]], [117, [0.48, 0.28, -0.62], [0.03, 0.07, -0.02]],
+        [124, [0.48, 0.28, 0.62], [0.0, 0.07, 0.02]], [132, [-0.42, 0.30, 0.62], [-0.03, 0.07, 0.02]],
+        [134, [0.30, 0.44, -0.24], [0.03, 0.08, 0]], [142, [0.26, 0.46, -0.18], [0.03, 0.08, 0]],
+        [144, [0.52, 0.46, 0.48], [0, 0.17, 0]], [158, [0.48, 0.40, 0.48], [0, 0.17, 0]], [166, [0.50, 0.34, 0.46], [0, 0.11, 0]],
+        [168, [0.62, 0.44, 0.52], [0, 0.17, 0]], [180, [0.56, 0.40, 0.58], [0, 0.16, 0]],
+        [182, [0.36, 0.66, 0.40], [0.0, 0.08, -0.01]], [204, [0.28, 0.68, 0.44], [0.0, 0.08, -0.01]],
+        [206, [0.14, 0.78, 0.18], [0.0, 0.08, 0.0]], [216, [0.16, 0.78, -0.14], [0.0, 0.08, 0.0]],
+        [218, [-0.16, 0.62, 0.44], [0.0, 0.09, -0.01]], [231, [-0.22, 0.62, 0.38], [0.0, 0.09, -0.01]],
+        [233, [0.86, 0.50, 0.80], [0, 0.20, 0]], [240, [0.70, 0.48, 0.96], [0, 0.21, 0]],
+      ];
+      function cameraAt(t) {
+        if (t < 10) { const a = 0.6 + t * 0.12; return { p: new THREE.Vector3(0.9 * Math.cos(a), 0.46, 0.9 * Math.sin(a)), q: new THREE.Vector3(0, 0.15, 0) }; }
+        let i = 0; while (i < CAM.length - 1 && CAM[i + 1][0] <= t) i++;
+        const a = CAM[i], b = CAM[Math.min(i + 1, CAM.length - 1)];
+        const u = b[0] === a[0] ? 0 : ease(prog(t, a[0], b[0]));
+        return { p: new THREE.Vector3(...a[1]).lerp(new THREE.Vector3(...b[1]), u), q: new THREE.Vector3(...a[2]).lerp(new THREE.Vector3(...b[2]), u) };
+      }
+
+      // ------------------------------------------------------------------ state at time t
+      const wiringOpacity = (t) => (t < 181 ? 1 : t < 183 ? 1 - 0.8 * prog(t, 181, 183) : t < 231 ? 0.2 : 0.2 + 0.8 * prog(t, 231, 233));
+      const motorStepTub = (t) => (t < 37 || t > 76 ? 1 : 1 - 0.6 * prog(t, 37, 38.5) * (1 - prog(t, 74.5, 76)));
+      const armWireAlpha = (t) => (t < 181 ? 1 : t < 183 ? 1 - 0.88 * prog(t, 181, 183) : t < 231 ? 0.12 : 0.12 + 0.88 * prog(t, 231, 233));
+      const SEE_THROUGH = new Set(["tub", "deck", "cage", "battery", "bar_1", "bar_2", "buck6v", "kill_switch", "mdd10a"]);
+      const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpP = new THREE.Vector3(), tmpS = new THREE.Vector3();
+      const armKeys = ["STOW", "HOME", "REACH_450"];
+
+      function armPose(t) {
+        if (t < 233) return ["STOW", "STOW", 0];
+        if (t < 235.5) return ["STOW", "HOME", ease(prog(t, 233, 235.5))];
+        return ["HOME", "REACH_450", ease(prog(t, 235.8, 238.5))];
+      }
+
+      function renderAt(t) {
+        // camera
+        const c = cameraAt(t);
+        camera.position.copy(c.p); camera.lookAt(c.q); camera.updateMatrixWorld();
+        const mode = t < 10 || t >= 232 ? "final" : t < 22.5 ? "kit" : "build";
+        const kitE = mode === "kit" ? ease(prog(t, 10, 13)) * (1 - ease(prog(t, 20.5, 22.5))) : 0;
+        const kitFade = mode === "kit" ? 1 - ease(prog(t, 20.5, 22.3)) : 1;
+        const op = wiringOpacity(t);
+        // parts
+        for (const [name, P] of Object.entries(parts)) {
+          const o = P.obj;
+          o.position.set(0, 0, 0); o.rotation.set(0, 0, 0); o.updateMatrix();
+          let vis = true, alpha = 1;
+          const off = new THREE.Vector3();
+          if (mode === "kit") {
+            const dir = P.base.clone().sub(new THREE.Vector3(0, 0.08, 0)); dir.y *= 0.4;
+            if (dir.length() < 1e-4) dir.set(0, 1, 0);
+            off.copy(dir.normalize().multiplyScalar(0.11 * kitE)).add(new THREE.Vector3(0, (P.meta.stepIndex || 0) * 0.012 * kitE, 0));
+            if (name !== "tub") alpha = kitFade;
+          } else if (mode === "build") {
+            const evs = EV.filter((e) => e.n === name);
+            if (evs.length) {
+              const e = evs[0];
+              if (t < e.t0) vis = false;
+              else {
+                const u = ease(prog(t, e.t0, e.t1));
+                off.copy(V(e.off[0] * (1 - u), e.off[1] * (1 - u), e.off[2] * (1 - u)));
+                if (e.spin && u < 1) {
+                  const ang = (1 - u) * e.spin.turns * Math.PI * 2;
+                  const axis = e.spin.ax === "z" ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+                  const piv = P.base;
+                  const m = new THREE.Matrix4().makeTranslation(piv.x, piv.y, piv.z)
+                    .multiply(new THREE.Matrix4().makeRotationAxis(axis, ang))
+                    .multiply(new THREE.Matrix4().makeTranslation(-piv.x, -piv.y, -piv.z));
+                  o.applyMatrix4(m);
+                }
+              }
+            }
+            if (DECK.includes(name) && t < 162.5) off.add(V(0, 0, DECK_LIFT(t)));
+            if (SEE_THROUGH.has(name)) alpha = op;
+            if (name === "tub") alpha = Math.min(alpha, motorStepTub(t));
+            if (/^(wheel_|hub_|tyre_)/.test(name)) alpha = 0.3 + 0.7 * (1 - (1 - op) / 0.8);   // wheels see-through while wiring
+          }
+          o.position.add(off);
+          o.visible = vis && alpha > 0.01;
+          P.mat.opacity = alpha; P.mat.depthWrite = alpha > 0.99;
+        }
+        // arm
+        const [ka, kb, u] = armPose(t);
+        const armVis = mode !== "build" || t >= SHOW_ARM_AT;
+        const armAlpha = mode === "kit" ? kitFade : mode === "build" ? armWireAlpha(t) : 1;
+        const drop = mode === "build" ? ARM_DROP(t) : 0;
+        const kitLift = mode === "kit" ? 0.16 * kitE : 0;
+        arm.forEach((A) => {
+          const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), pa = new THREE.Vector3(), pb = new THREE.Vector3();
+          A.frames[ka].decompose(pa, qa, tmpS); A.frames[kb].decompose(pb, qb, tmpS);
+          A.obj.position.copy(pa.lerp(pb, u)).add(new THREE.Vector3(0, drop / 1000 + kitLift, 0));
+          A.obj.quaternion.copy(qa.slerp(qb, u));
+          A.obj.visible = armVis && armAlpha > 0.01;
+          A.mat.opacity = armAlpha; A.mat.depthWrite = armAlpha > 0.99;
+        });
+        // wires
+        wireObjs.forEach((w) => {
+          const u = mode === "final" && t >= 232 ? 1 : prog(t, w.t0, w.t1);
+          w.mesh.visible = t >= w.t0;
+          w.mesh.geometry.setDrawRange(0, Math.max(0, Math.floor(w.count * u / 6) * 6));
+        });
+        renderer.render(scene, camera);
+        // 3D-anchored labels (part labels + wire tags)
+        const proj = (v) => { const p = v.clone().project(camera); return [(p.x * 0.5 + 0.5) * W, (-p.y * 0.5 + 0.5) * H, p.z]; };
+        const place = (L, anchor, a) => {
+          const [x, y, z] = proj(anchor);
+          const show = a > 0.01 && z < 1;
+          L.el.style.opacity = show ? a : 0;
+          L.l.setAttribute("opacity", show ? a : 0); L.c.setAttribute("opacity", show ? a : 0);
+          if (!show) return;
+          const dx = L.flip && x > 1250 ? -L.dx - 420 : L.dx;
+          let tx = Math.max(780, Math.min(W - 520, x + dx)), ty = Math.max(150, Math.min(H - 170, y + L.dy));
+          L.el.style.transform = `translate(${tx}px, ${ty - 22}px)`;
+          L.l.setAttribute("points", `${x},${y} ${tx + (tx > x ? 0 : 160)},${ty}`);
+          L.c.setAttribute("cx", x); L.c.setAttribute("cy", y);
+        };
+        LABELS.forEach((L) => {
+          const a = prog(t, L.t0, L.t0 + 0.5) * (1 - prog(t, L.t1 - 0.5, L.t1));
+          const P = parts[L.at];
+          const anchor = P ? P.base.clone().add(P.obj.position) : V(...L.at);
+          place(L, anchor, a);
+        });
+        wireObjs.forEach((w) => {
+          const stepEnd = t < 205 ? 205 : t < 217 ? 217 : 232;
+          const a = prog(t, w.t1 - 0.6, w.t1) * (1 - prog(t, Math.min(w.t1 + 3.4, stepEnd - 0.6), Math.min(w.t1 + 4, stepEnd)));
+          place(w.L, w.end, a);
+        });
+      }
+
+      // ------------------------------------------------------------------ build the scene
+      function buildWires() {
+        WIRES.forEach((w, i) => {
+          const path = new THREE.CurvePath();
+          const pts = w.pts.map((p) => V(...p));
+          for (let k = 0; k < pts.length - 1; k++) path.add(new THREE.LineCurve3(pts[k], pts[k + 1]));
+          const segs = Math.max(24, pts.length * 28);
+          const geo = new THREE.TubeGeometry(path, segs, 0.0016, 8, false);
+          const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: w.c, roughness: 0.45, metalness: 0.05, emissive: w.c, emissiveIntensity: 0.25 }));
+          mesh.renderOrder = 10;
+          scene.add(mesh);
+          const L = { el: mkTag(w.tag[0], w.tag[1], "wire"), dx: 150, dy: [-210, -120, -30, 60, 150][i % 5], flip: true };
+          L.el.style.setProperty("--wc", "#" + w.c.toString(16).padStart(6, "0"));
+          Object.assign(L, mkLine());
+          L.l.setAttribute("stroke", "#" + w.c.toString(16).padStart(6, "0"));
+          L.c.setAttribute("fill", "#" + w.c.toString(16).padStart(6, "0"));
+          wireObjs.push({ ...w, mesh, count: geo.index.count, end: pts[pts.length - 1], L });
+        });
+      }
+
+      const stepIndex = { tub: 0, motors: 1, cage: 2, boards: 3, wheels: 4, battery: 5, deck: 6, deck_close: 6, arm: 7 };
+      const ready = new Promise((resolve) => {
+        new GLTFLoader().load("assets/robot.glb", (gltf) => {
+          const byName = {};
+          gltf.scene.traverse((o) => { if (o.isMesh) byName[o.name] = o; });
+          S.parts.forEach((p) => {
+            const o = byName[p.name];
+            if (!o) return;
+            o.removeFromParent();
+            const m = mat(p.color);
+            o.material = m; o.matrixAutoUpdate = true;
+            o.geometry.computeVertexNormals();
+            const holder = new THREE.Group(); holder.add(o); scene.add(holder);
+            p.stepIndex = stepIndex[p.step] || 0;
+            parts[p.name] = { obj: holder, mat: m, base: new THREE.Vector3(...p.center), meta: p };
+          });
+          S.arm.geoms.forEach((g, i) => {
+            const o = byName[g.name];
+            if (!o) return;
+            o.removeFromParent();
+            const m = mat(g.color);
+            o.material = m; o.geometry.computeVertexNormals();
+            o.matrixAutoUpdate = true;
+            const frames = {};
+            for (const k of Object.keys(S.arm.keyframes)) frames[k] = new THREE.Matrix4().fromArray(S.arm.keyframes[k][i]);
+            scene.add(o);
+            arm.push({ obj: o, mat: m, frames });
+          });
+          buildWires();
+          renderAt(window.__hfThreeTime || 0);
+          resolve();
+        });
+      });
+      window.__hf = window.__hf || {};
+      window.__hf.buildReady = window.__hf.buildReady || {};
+      window.__hf.buildReady["thenar-assembly"] = ready;
+
+      window.addEventListener("hf-seek", (e) => { if (Object.keys(parts).length) renderAt(e.detail.time); });
+    </script>
+  </body>
+</html>

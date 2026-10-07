@@ -1,0 +1,56 @@
+status: Mapping only; no hardware plugin or control deployment provided
+joints:
+  shoulder_pan:
+    pca9685_channel: 0
+    command_interface: position
+    feedback: UNAVAILABLE from ordinary MG996R three-wire interface
+    sign_default: 1
+    zero_us: 1500
+    us_per_degree: 5.555556
+    mechanical_reduction: 1
+    physical_calibration: UNVERIFIED
+  shoulder_lift:
+    pca9685_channel: 1
+    command_interface: position
+    feedback: UNAVAILABLE from ordinary MG996R three-wire interface
+    sign_default: 1
+    zero_us: 1500
+    us_per_degree: 5.555556
+    mechanical_reduction: 1
+    physical_calibration: UNVERIFIED
+  elbow_flex:
+    pca9685_channel: 2
+    command_interface: position
+    feedback: UNAVAILABLE from ordinary MG996R three-wire interface
+    sign_default: 1
+    zero_us: 1500
+    us_per_degree: 5.555556
+    mechanical_reduction: 1
+    physical_calibration: UNVERIFIED
+  wrist_flex:
+    pca9685_channel: 3
+    command_interface: position
+    feedback: UNAVAILABLE from ordinary MG996R three-wire interface
+    sign_default: 1
+    zero_us: 1500
+    us_per_degree: 5.555556
+    mechanical_reduction: 1
+    physical_calibration: UNVERIFIED
+  wrist_roll:
+    pca9685_channel: 4
+    command_interface: position
+    feedback: UNAVAILABLE from ordinary MG996R three-wire interface
+    sign_default: 1
+    zero_us: 1500
+    us_per_degree: 5.555556
+    mechanical_reduction: 1
+    physical_calibration: UNVERIFIED
+  gripper:
+    pca9685_channel: 5
+    command_interface: position
+    feedback: UNAVAILABLE from ordinary MG996R three-wire interface
+    sign_default: 1
+    zero_us: 1500
+    us_per_degree: 5.555556
+    mechanical_reduction: 1
+    physical_calibration: UNVERIFIED

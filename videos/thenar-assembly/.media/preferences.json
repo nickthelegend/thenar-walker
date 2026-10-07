@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "preferences": {
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "thenar-assembly"
+      ],
+      "updated_at": "2026-10-07T15:36:27.271Z"
+    },
+    "storyboard": {
+      "value": "no",
+      "confirmed_in": [
+        "thenar-assembly"
+      ],
+      "updated_at": "2026-10-07T15:36:27.447Z"
+    },
+    "aspect": {
+      "value": "1920x1080",
+      "confirmed_in": [
+        "thenar-assembly"
+      ],
+      "updated_at": "2026-10-07T15:36:27.567Z"
+    }
+  },
+  "sightings": {}
+}

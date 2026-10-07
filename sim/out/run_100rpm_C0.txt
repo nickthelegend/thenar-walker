@@ -1,0 +1,28 @@
+  t=  0.01s  phase engage       robot (+0.480, +0.800)  fw state 1
+  t=  0.41s  phase unfold       robot (+0.480, +0.800)  fw state 1
+  t=  2.43s  phase approach     robot (+0.480, +0.800)  fw state 1
+  t=  5.38s  phase reach_450    robot (+0.849, +0.800)  fw state 1
+  t=  6.00s  phase grip         robot (+0.848, +0.800)  fw state 1
+  t=  6.80s  phase lift_off_pole robot (+0.848, +0.800)  fw state 1
+  t=  7.24s  phase back_off     robot (+0.843, +0.800)  fw state 1
+  t=  8.84s  phase carry        robot (+0.690, +0.800)  fw state 1
+  t= 10.22s  phase turn         robot (+0.690, +0.800)  fw state 1
+  t= 38.17s  phase align        robot (-0.303, +0.233)  fw state 1
+  t= 42.84s  phase lower        robot (+0.366, +0.594)  fw state 1
+  t= 49.12s  phase release      robot (+0.364, +0.593)  fw state 1
+  t= 54.82s  phase retract      robot (+0.378, +0.600)  fw state 1
+  t= 55.83s  phase done         robot (+0.378, +0.600)  fw state 1
+PASS Robot never tips (|roll| < 25 deg, |pitch| < 25 deg) — max |pitch| 0.1 deg, max |roll| 0.0 deg
+PASS Chassis / motors never touch an obstacle (only tyres do) — no contacts
+PASS Downy: 60 mm cube taken off the 400 mm pole — max cube centre 536 mm
+PASS Turned to face the target square (final aim error < 3 deg) — {"style": "reverse arc + forward arc", "duration_s": 27.9, "rotation_travelled_deg": 184.7, "final_aim_error_deg": 0.24, "peak_motor_current_A_total": 2.43, "mean_motor_current_A_total": 1.34, "mean_battery_current_A_motors": 0.37, "time_above_80pct_stall_s": 0.0}
+PASS Placed completely inside the 100 x 100 mm square — cube centre offset (+12.6, -6.5) mm, z 30.0 mm
+  event {'t': 2.42, 'event': 'approach_error_mm', 'value': np.float64(1.3378931360584767)}
+  event {'t': 7.23, 'event': 'cube60_lifted_off_pole_mm', 'value': np.float64(23.4)}
+  event {'t': 22.61, 'event': 'arc_turn (reverse) heading error deg', 'value': -24.53}
+  event {'t': 35.01, 'event': 'arc_turn (forward) heading error deg', 'value': -54.65}
+  event {'t': 38.16, 'event': 'turn_in_place_final_error_deg', 'value': 0.24}
+  event {'t': 38.16, 'event': 'place_align_error_mm', 'value': np.float64(1.4219911283315234)}
+  event {'t': 42.83, 'event': 'cube60_in_hand_offset_mm', 'value': [-32.8, 8.4, 5.0]}
+scenario C: ALL PASS in 56.8 s simulated
+video F:\Projects\thenar-walker\sim\out\mission_C_100rpm_precision.mp4 1721 frames

@@ -1,0 +1,19 @@
+{
+ "tyre_friction_TPU_on_ply": 0.9,
+ "tyre_friction_PETG_on_ply": 0.35,
+ "front_tyre_material": "PETG",
+ "rear_tyre_material": "TPU",
+ "finger_friction": 1.0,
+ "object_friction_thermocol": 0.7,
+ "cube50_mass_kg": 0.02,
+ "cube60_mass_kg": 0.03,
+ "servo_stall_Nm": 1.08,
+ "servo_kp_Nm_per_rad": 30.0,
+ "gripper_kp_Nm_per_rad": 3.0,
+ "servo_armature": 0.004,
+ "wheel_armature": 0.004,
+ "motor": "25GA-370 / JGA25-370 12 V 103:1 (60 rpm free, rated 2.7 kg.cm @ 46 rpm, stall 8.2 kg.cm / 1.3 A)",
+ "motor_stall_Nm": 0.8041453,
+ "motor_free_rad_s": 6.283185307179585,
+ "battery_V_over_12": 0.9666666666666667
+}

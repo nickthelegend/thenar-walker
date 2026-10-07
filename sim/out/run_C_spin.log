@@ -1,0 +1,26 @@
+  t=  0.01s  phase engage       robot (+0.480, +0.800)  fw state 1
+  t=  0.41s  phase unfold       robot (+0.480, +0.800)  fw state 1
+  t=  2.43s  phase approach     robot (+0.480, +0.800)  fw state 1
+  t=  7.18s  phase reach_450    robot (+0.847, +0.800)  fw state 1
+  t=  7.91s  phase grip         robot (+0.847, +0.800)  fw state 1
+  t=  8.71s  phase lift_off_pole robot (+0.846, +0.800)  fw state 1
+  t=  9.17s  phase back_off     robot (+0.843, +0.800)  fw state 1
+  t= 10.77s  phase carry        robot (+0.745, +0.800)  fw state 1
+  t= 12.17s  phase turn         robot (+0.745, +0.800)  fw state 1
+  t= 15.99s  phase align        robot (+0.632, +0.741)  fw state 1
+  t= 19.64s  phase lower        robot (+0.793, +0.862)  fw state 1
+  t= 25.60s  phase release      robot (+0.794, +0.863)  fw state 1
+  t= 30.42s  phase retract      robot (+0.787, +0.857)  fw state 1
+  t= 31.37s  phase done         robot (+0.787, +0.857)  fw state 1
+PASS Robot never tips (|roll| < 25 deg, |pitch| < 25 deg) — max |pitch| 0.1 deg, max |roll| 0.0 deg
+PASS Chassis / motors never touch an obstacle (only tyres do) — no contacts
+PASS Downy: 60 mm cube taken off the 400 mm pole — max cube centre 539 mm
+PASS Turned to face the target square (final aim error < 3 deg) — {"style": "spin in place", "duration_s": 3.8, "rotation_travelled_deg": 145.2, "final_aim_error_deg": -0.15, "peak_motor_current_A_total": 1.69, "mean_motor_current_A_total": 1.2, "mean_battery_current_A_motors": 0.57, "time_above_80pct_stall_s": 0.0}
+PASS Placed completely inside the 100 x 100 mm square — cube centre offset (-8.3, +6.9) mm, z 30.0 mm
+  event {'t': 2.42, 'event': 'approach_error_mm', 'value': np.float64(3.193155147488469)}
+  event {'t': 9.16, 'event': 'cube60_lifted_off_pole_mm', 'value': np.float64(22.4)}
+  event {'t': 15.98, 'event': 'turn_in_place_final_error_deg', 'value': -0.15}
+  event {'t': 15.98, 'event': 'place_align_error_mm', 'value': np.float64(3.2811744713195923)}
+  event {'t': 19.63, 'event': 'cube60_in_hand_offset_mm', 'value': [-32.6, 7.9, 4.3]}
+scenario C: ALL PASS in 32.4 s simulated
+video F:\Projects\thenar-walker\sim\out\mission_C_spin.mp4 980 frames

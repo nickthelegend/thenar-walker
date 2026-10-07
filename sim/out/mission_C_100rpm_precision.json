@@ -1,0 +1,83 @@
+{
+ "scenario": "C",
+ "sim_time_s": 56.82,
+ "events": [
+  {
+   "t": 2.42,
+   "event": "approach_error_mm",
+   "value": 1.3378931360584767
+  },
+  {
+   "t": 7.23,
+   "event": "cube60_lifted_off_pole_mm",
+   "value": 23.4
+  },
+  {
+   "t": 22.61,
+   "event": "arc_turn (reverse) heading error deg",
+   "value": -24.53
+  },
+  {
+   "t": 35.01,
+   "event": "arc_turn (forward) heading error deg",
+   "value": -54.65
+  },
+  {
+   "t": 38.16,
+   "event": "turn_in_place_final_error_deg",
+   "value": 0.24
+  },
+  {
+   "t": 38.16,
+   "event": "place_align_error_mm",
+   "value": 1.4219911283315234
+  },
+  {
+   "t": 42.83,
+   "event": "cube60_in_hand_offset_mm",
+   "value": [
+    -32.8,
+    8.4,
+    5.0
+   ]
+  }
+ ],
+ "checks": [
+  {
+   "check": "Robot never tips (|roll| < 25 deg, |pitch| < 25 deg)",
+   "pass": true,
+   "detail": "max |pitch| 0.1 deg, max |roll| 0.0 deg"
+  },
+  {
+   "check": "Chassis / motors never touch an obstacle (only tyres do)",
+   "pass": true,
+   "detail": "no contacts"
+  },
+  {
+   "check": "Downy: 60 mm cube taken off the 400 mm pole",
+   "pass": true,
+   "detail": "max cube centre 536 mm"
+  },
+  {
+   "check": "Turned to face the target square (final aim error < 3 deg)",
+   "pass": true,
+   "detail": "{\"style\": \"reverse arc + forward arc\", \"duration_s\": 27.9, \"rotation_travelled_deg\": 184.7, \"final_aim_error_deg\": 0.24, \"peak_motor_current_A_total\": 2.43, \"mean_motor_current_A_total\": 1.34, \"mean_battery_current_A_motors\": 0.37, \"time_above_80pct_stall_s\": 0.0}"
+  },
+  {
+   "check": "Placed completely inside the 100 x 100 mm square",
+   "pass": true,
+   "detail": "cube centre offset (+12.6, -6.5) mm, z 30.0 mm"
+  }
+ ],
+ "turn": {
+  "style": "reverse arc + forward arc",
+  "duration_s": 27.9,
+  "rotation_travelled_deg": 184.7,
+  "final_aim_error_deg": 0.24,
+  "peak_motor_current_A_total": 2.43,
+  "mean_motor_current_A_total": 1.34,
+  "mean_battery_current_A_motors": 0.37,
+  "time_above_80pct_stall_s": 0.0
+ },
+ "all_pass": true
+}

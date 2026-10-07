@@ -1,0 +1,39 @@
+{
+ "method": "Estimate P1S print time and filament for every rover plate from the real geometry.",
+ "accuracy": "+-25 %",
+ "plates": [
+  {
+   "plate": "P1S_Rover_1_Tub_Cage_Bars.3mf",
+   "material": "PETG",
+   "est_hours": 7.1,
+   "est_filament_g": 259
+  },
+  {
+   "plate": "P1S_Rover_2_Deck.3mf",
+   "material": "PETG",
+   "est_hours": 3.0,
+   "est_filament_g": 127
+  },
+  {
+   "plate": "P1S_Rover_3_FrontWheel_RearHub_A_PRINT_FIRST.3mf",
+   "material": "PETG",
+   "est_hours": 5.4,
+   "est_filament_g": 211
+  },
+  {
+   "plate": "P1S_Rover_4_FrontWheel_RearHub_B.3mf",
+   "material": "PETG",
+   "est_hours": 5.4,
+   "est_filament_g": 211
+  },
+  {
+   "plate": "P1S_Rover_5_RearTyres_TPU.3mf",
+   "material": "TPU 95A",
+   "est_hours": 7.7,
+   "est_filament_g": 87
+  }
+ ],
+ "total_hours": 28.6,
+ "petg_g": 808,
+ "tpu_g": 87
+}

@@ -1,0 +1,762 @@
+{
+ "views": [
+  {
+   "name": "RR-01_floor",
+   "part": "RR-01_Chassis_Tub",
+   "title": "RR-01 Chassis tub \u2014 floor (top view)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-01_floor.png",
+   "size": [
+    240.0,
+    138.0
+   ],
+   "origin": "corner",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 13.0,
+     "y": 101.5
+    },
+    {
+     "id": "A2",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 13.0,
+     "y": 116.5
+    },
+    {
+     "id": "A3",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 23.0,
+     "y": 101.5
+    },
+    {
+     "id": "A4",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 23.0,
+     "y": 116.5
+    },
+    {
+     "id": "A5",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 62.5,
+     "y": 10.5
+    },
+    {
+     "id": "A6",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 62.5,
+     "y": 51.5
+    },
+    {
+     "id": "A7",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 62.4,
+     "y": 62.8
+    },
+    {
+     "id": "A8",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 62.4,
+     "y": 81.2
+    },
+    {
+     "id": "A9",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 117.6,
+     "y": 62.8
+    },
+    {
+     "id": "A10",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 117.6,
+     "y": 81.2
+    },
+    {
+     "id": "A11",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 121.5,
+     "y": 10.5
+    },
+    {
+     "id": "A12",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 121.5,
+     "y": 51.5
+    },
+    {
+     "id": "A13",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 138.0,
+     "y": 10.5
+    },
+    {
+     "id": "A14",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 138.0,
+     "y": 43.5
+    },
+    {
+     "id": "A15",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 138.0,
+     "y": 51.5
+    },
+    {
+     "id": "A16",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 138.0,
+     "y": 84.5
+    },
+    {
+     "id": "A17",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 176.0,
+     "y": 10.5
+    },
+    {
+     "id": "A18",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 176.0,
+     "y": 43.5
+    },
+    {
+     "id": "A19",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 176.0,
+     "y": 51.5
+    },
+    {
+     "id": "A20",
+     "size": "\u00d82.2",
+     "kind": "round",
+     "x": 176.0,
+     "y": 84.5
+    },
+    {
+     "id": "B1",
+     "size": "28.0 \u00d7 58.0",
+     "kind": "slot",
+     "x": 44.0,
+     "y": 31.1
+    },
+    {
+     "id": "B2",
+     "size": "28.0 \u00d7 58.0",
+     "kind": "slot",
+     "x": 196.0,
+     "y": 31.1
+    },
+    {
+     "id": "C1",
+     "size": "30.7 \u00d7 58.0",
+     "kind": "slot",
+     "x": 44.1,
+     "y": 106.9
+    },
+    {
+     "id": "C2",
+     "size": "30.7 \u00d7 58.0",
+     "kind": "slot",
+     "x": 195.9,
+     "y": 106.9
+    }
+   ],
+   "notes": [
+    "Section through the 3 mm floor. Board standoff pilots (\u00d82.2) are 1 mm deep into the floor, under 3 mm tall \u00d86 posts.",
+    "The 4 big cut-outs at the corners are the motor floor windows."
+   ]
+  },
+  {
+   "name": "RR-01_wall_left",
+   "part": "RR-01_Chassis_Tub",
+   "title": "RR-01 Chassis tub \u2014 left side wall (seen from outside)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-01_wall_left.png",
+   "size": [
+    240.0,
+    41.0
+   ],
+   "origin": "corner",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 35.5,
+     "y": 13.0
+    },
+    {
+     "id": "A2",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 52.5,
+     "y": 13.0
+    },
+    {
+     "id": "A3",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 187.5,
+     "y": 13.0
+    },
+    {
+     "id": "A4",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 204.5,
+     "y": 13.0
+    },
+    {
+     "id": "B1",
+     "size": "\u00d88.0",
+     "kind": "round",
+     "x": 44.0,
+     "y": 13.0
+    },
+    {
+     "id": "B2",
+     "size": "\u00d88.0",
+     "kind": "round",
+     "x": 196.0,
+     "y": 13.0
+    }
+   ],
+   "notes": [
+    "Motor slots: 26 mm wide U-slots, round top centred on the axle (13 mm above the tub bottom = 70 mm above the ground), open at the bottom.",
+    "Per motor: \u00d88 shaft/boss hole + 2 \u00d7 \u00d83.4 (M3) holes 17 mm apart. The right wall is the mirror image.",
+    "Sized for the 25 mm motor \u2014 will change for the 35 mm motor."
+   ]
+  },
+  {
+   "name": "RR-01_wall_front",
+   "part": "RR-01_Chassis_Tub",
+   "title": "RR-01 Chassis tub \u2014 front wall (seen from the front)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-01_wall_front.png",
+   "size": [
+    138.0,
+    41.0
+   ],
+   "origin": "corner",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "8.0 \u00d7 24.0",
+     "kind": "slot",
+     "x": 19.0,
+     "y": 21.0
+    },
+    {
+     "id": "A2",
+     "size": "8.0 \u00d7 24.0",
+     "kind": "slot",
+     "x": 44.0,
+     "y": 21.0
+    },
+    {
+     "id": "A3",
+     "size": "8.0 \u00d7 24.0",
+     "kind": "slot",
+     "x": 69.0,
+     "y": 21.0
+    },
+    {
+     "id": "A4",
+     "size": "8.0 \u00d7 24.0",
+     "kind": "slot",
+     "x": 94.0,
+     "y": 21.0
+    },
+    {
+     "id": "A5",
+     "size": "8.0 \u00d7 24.0",
+     "kind": "slot",
+     "x": 119.0,
+     "y": 21.0
+    }
+   ],
+   "notes": [
+    "5 ventilation slots 8 \u00d7 24 mm."
+   ]
+  },
+  {
+   "name": "RR-01_wall_rear",
+   "part": "RR-01_Chassis_Tub",
+   "title": "RR-01 Chassis tub \u2014 rear wall (seen from the rear)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-01_wall_rear.png",
+   "size": [
+    138.0,
+    41.0
+   ],
+   "origin": "corner",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "14.0 \u00d7 16.0",
+     "kind": "slot",
+     "x": 39.0,
+     "y": 32.0
+    }
+   ],
+   "notes": [
+    "USB grommet window 16 \u00d7 14 mm for the ESP32 cable."
+   ]
+  },
+  {
+   "name": "RR-01_top",
+   "part": "RR-01_Chassis_Tub",
+   "title": "RR-01 Chassis tub \u2014 top of the walls",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-01_top.png",
+   "size": [
+    240.0,
+    138.0
+   ],
+   "origin": "corner",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "\u00d84.0",
+     "kind": "round",
+     "x": 8.0,
+     "y": 6.0
+    },
+    {
+     "id": "A2",
+     "size": "\u00d84.0",
+     "kind": "round",
+     "x": 8.0,
+     "y": 132.0
+    },
+    {
+     "id": "A3",
+     "size": "\u00d84.0",
+     "kind": "round",
+     "x": 232.0,
+     "y": 6.0
+    },
+    {
+     "id": "A4",
+     "size": "\u00d84.0",
+     "kind": "round",
+     "x": 232.0,
+     "y": 132.0
+    }
+   ],
+   "notes": [
+    "Corner columns \u00d89 with \u00d84.0 bores, 8 mm deep: melt in the M3 heat-set inserts."
+   ]
+  },
+  {
+   "name": "RR-02_deck",
+   "part": "RR-02_Deck_Plate",
+   "title": "RR-02 Deck plate (top view)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-02_deck.png",
+   "size": [
+    250.0,
+    138.0
+   ],
+   "origin": "corner",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "\u00d82.6",
+     "kind": "round",
+     "x": 138.1,
+     "y": 76.1
+    },
+    {
+     "id": "A2",
+     "size": "\u00d82.6",
+     "kind": "round",
+     "x": 138.1,
+     "y": 131.9
+    },
+    {
+     "id": "A3",
+     "size": "\u00d82.6",
+     "kind": "round",
+     "x": 216.9,
+     "y": 76.1
+    },
+    {
+     "id": "A4",
+     "size": "\u00d82.6",
+     "kind": "round",
+     "x": 216.9,
+     "y": 131.9
+    },
+    {
+     "id": "B1",
+     "size": "\u00d82.8",
+     "kind": "round",
+     "x": 71.0,
+     "y": 39.0
+    },
+    {
+     "id": "B2",
+     "size": "\u00d82.8",
+     "kind": "round",
+     "x": 119.0,
+     "y": 39.0
+    },
+    {
+     "id": "C1",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 13.0,
+     "y": 6.0
+    },
+    {
+     "id": "C2",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 13.0,
+     "y": 132.0
+    },
+    {
+     "id": "C3",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 23.8,
+     "y": 37.3
+    },
+    {
+     "id": "C4",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 23.8,
+     "y": 100.7
+    },
+    {
+     "id": "C5",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 93.5,
+     "y": 41.2
+    },
+    {
+     "id": "C6",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 93.5,
+     "y": 96.8
+    },
+    {
+     "id": "C7",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 237.0,
+     "y": 6.0
+    },
+    {
+     "id": "C8",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 237.0,
+     "y": 132.0
+    },
+    {
+     "id": "D1",
+     "size": "12.0 \u00d7 30.0",
+     "kind": "slot",
+     "x": 114.2,
+     "y": 69.0
+    },
+    {
+     "id": "D2",
+     "size": "12.0 \u00d7 30.0",
+     "kind": "slot",
+     "x": 229.0,
+     "y": 106.0
+    },
+    {
+     "id": "E1",
+     "size": "22.2 \u00d7 30.2",
+     "kind": "slot",
+     "x": 227.0,
+     "y": 29.0
+    }
+   ],
+   "notes": [
+    "\u00d83.4 corner holes, counterbored \u00d86.5 \u00d7 2.5 deep on top: deck \u2192 tub, M3 \u00d7 10.",
+    "Arm base: 4 \u00d7 \u00d83.4 through the arm vent slots, M3 \u00d7 20 + nyloc under the deck.",
+    "MDD10A: 4 \u00d7 \u00d82.6 pilots in \u00d87 \u00d7 6 mm bosses on top, 78.74 \u00d7 55.88 apart (M3 \u00d7 10 self-tapping).",
+    "ESP32: 2 \u00d7 \u00d82.8 for the M2.5 brass standoffs."
+   ]
+  },
+  {
+   "name": "RR-03_cage_base",
+   "part": "RR-03_Battery_Cradle",
+   "title": "RR-03 Battery cage \u2014 base and floor tabs",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-03_cage_base.png",
+   "size": [
+    128.0,
+    44.0
+   ],
+   "origin": "corner",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 3.0,
+     "y": 22.0
+    },
+    {
+     "id": "A2",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 125.0,
+     "y": 22.0
+    }
+   ],
+   "notes": [
+    "Inside 108 \u00d7 36 mm (battery max 106 \u00d7 34 \u00d7 26). Tabs: 2 \u00d7 \u00d83.4 for M3 \u00d7 8 + nyloc through the tub floor."
+   ]
+  },
+  {
+   "name": "RR-03_cage_top",
+   "part": "RR-03_Battery_Cradle",
+   "title": "RR-03 Battery cage \u2014 top (bar screw bosses)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-03_cage_top.png",
+   "size": [
+    116.0,
+    44.0
+   ],
+   "origin": "corner",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "\u00d82.6",
+     "kind": "round",
+     "x": 31.5,
+     "y": 2.0
+    },
+    {
+     "id": "A2",
+     "size": "\u00d82.6",
+     "kind": "round",
+     "x": 31.5,
+     "y": 42.0
+    },
+    {
+     "id": "A3",
+     "size": "\u00d82.6",
+     "kind": "round",
+     "x": 84.5,
+     "y": 2.0
+    },
+    {
+     "id": "A4",
+     "size": "\u00d82.6",
+     "kind": "round",
+     "x": 84.5,
+     "y": 42.0
+    }
+   ],
+   "notes": [
+    "4 \u00d7 \u00d82.6 pilots, 8 mm deep: M3 \u00d7 8 self-tapping for the two bars."
+   ]
+  },
+  {
+   "name": "RR-04_bar",
+   "part": "RR-04_Battery_Bar",
+   "title": "RR-04 Battery bar (\u00d72)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-04_bar.png",
+   "size": [
+    10.0,
+    44.0
+   ],
+   "origin": "corner",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 5.0,
+     "y": 2.0
+    },
+    {
+     "id": "A2",
+     "size": "\u00d83.4",
+     "kind": "round",
+     "x": 5.0,
+     "y": 42.0
+    }
+   ],
+   "notes": [
+    "3 mm thick."
+   ]
+  },
+  {
+   "name": "RR-05_hub_6mm",
+   "part": "RR-05_Wheel_Hub_6mm",
+   "title": "RR-05 Rear wheel hub, 6 mm shaft (inner face)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-05_hub_6mm.png",
+   "size": [
+    128.0,
+    128.0
+   ],
+   "origin": "center",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "\u00d86.3",
+     "kind": "round",
+     "x": 0.0,
+     "y": -0.0
+    },
+    {
+     "id": "B1",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": -32.0,
+     "y": -18.5
+    },
+    {
+     "id": "B2",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": -32.0,
+     "y": 18.5
+    },
+    {
+     "id": "B3",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": 0.0,
+     "y": -37.0
+    },
+    {
+     "id": "B4",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": -0.0,
+     "y": 37.0
+    },
+    {
+     "id": "B5",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": 32.0,
+     "y": -18.5
+    },
+    {
+     "id": "B6",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": 32.0,
+     "y": 18.5
+    }
+   ],
+   "notes": [
+    "Positions from the wheel centre. Rim \u00d8128 between two bead lips \u00d8131; width 28.",
+    "Bore \u00d86.3 round. M3 grub screw: \u00d82.6 radial hole 3.6 mm from the inner face, hex-key access \u00d83.8 through the rim."
+   ]
+  },
+  {
+   "name": "RR-07_front_6mm",
+   "part": "RR-07_Front_Wheel_PETG_6mm",
+   "title": "RR-07 Front wheel, 6 mm shaft (inner face)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-07_front_6mm.png",
+   "size": [
+    138.0,
+    138.0
+   ],
+   "origin": "center",
+   "holes": [
+    {
+     "id": "A1",
+     "size": "\u00d86.3",
+     "kind": "round",
+     "x": 0.0,
+     "y": -0.0
+    },
+    {
+     "id": "B1",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": -32.0,
+     "y": -18.5
+    },
+    {
+     "id": "B2",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": -32.0,
+     "y": 18.5
+    },
+    {
+     "id": "B3",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": 0.0,
+     "y": -37.0
+    },
+    {
+     "id": "B4",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": -0.0,
+     "y": 37.0
+    },
+    {
+     "id": "B5",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": 32.0,
+     "y": -18.5
+    },
+    {
+     "id": "B6",
+     "size": "\u00d826.0",
+     "kind": "round",
+     "x": 32.0,
+     "y": 18.5
+    }
+   ],
+   "notes": [
+    "Positions from the wheel centre. \u00d8140 one-piece, width 28, tread with 2 grooves.",
+    "Bore \u00d86.3 round. Grub screw as the rear hub; the key access hole goes through the tread."
+   ]
+  },
+  {
+   "name": "RR-06F_strip",
+   "part": "RR-06F_Tyre_Strip_Half",
+   "title": "RR-06F TPU tyre half-strip (top view, 4 per robot)",
+   "png": "F:\\Projects\\thenar-walker\\docs\\drawings\\RR-06F_strip.png",
+   "size": [
+    224.3,
+    25.0
+   ],
+   "origin": "corner",
+   "holes": [],
+   "notes": [
+    "6 mm thick, 25 mm wide, 224.3 mm long including the knob. Two halves make one tyre (412.6 mm, 2 % shorter than the hub).",
+    "\u00d84.4 key hole sits over the hub grub screw (edge with the hole toward the robot)."
+   ]
+  }
+ ],
+ "extra": {
+  "robot_dimensions": "F:\\Projects\\thenar-walker\\docs\\drawings\\robot_dimensions.png",
+  "layout_floor": "F:\\Projects\\thenar-walker\\docs\\drawings\\layout_floor.png",
+  "layout_deck": "F:\\Projects\\thenar-walker\\docs\\drawings\\layout_deck.png"
+ }
+}

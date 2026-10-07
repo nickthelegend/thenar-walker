@@ -1,0 +1,21 @@
+Panels:
+  - Class: rviz_common/Displays
+Visualization Manager:
+  Global Options:
+    Fixed Frame: base_link
+  Displays:
+    - Class: rviz_default_plugins/RobotModel
+      Name: Robot
+      Enabled: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot_description
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 0.65
+      Pitch: 0.45
+      Yaw: 0.7

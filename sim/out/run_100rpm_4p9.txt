@@ -1,0 +1,28 @@
+  t=  0.01s  phase engage       robot (-1.200, -1.250)  fw state 1
+  t=  0.41s  phase unfold       robot (-1.200, -1.250)  fw state 1
+  t=  2.39s  phase approach     robot (-1.200, -1.250)  fw state 1
+  t=  4.19s  phase descend      robot (-1.200, -1.182)  fw state 1
+  t=  5.76s  phase grip         robot (-1.200, -1.184)  fw state 1
+  t=  6.77s  phase lift         robot (-1.200, -1.181)  fw state 1
+  t=  7.74s  phase carry        robot (-1.200, -1.179)  fw state 1
+  t=  8.47s  phase course       robot (-1.200, -1.179)  fw state 1
+  t= 14.21s  phase align        robot (-1.200, +0.650)  fw state 1
+  t= 14.94s  phase lower        robot (-1.201, +0.741)  fw state 1
+  t= 20.40s  phase release      robot (-1.201, +0.719)  fw state 1
+  t= 24.29s  phase retract      robot (-1.201, +0.720)  fw state 1
+  t= 25.23s  phase done         robot (-1.201, +0.720)  fw state 1
+PASS Robot never tips (|roll| < 25 deg, |pitch| < 25 deg) — max |pitch| 15.9 deg, max |roll| 0.1 deg
+PASS Chassis / motors never touch an obstacle (only tyres do) — no contacts
+PASS Pickup: cube lifted clear of the ground — max cube height 291 mm
+PASS Cube held by the gripper the whole way (no drop) — 1266 samples from pickup to touchdown, 0 with the cube > 20 mm from the grasp point
+PASS Climbed the 15 deg ramp and crossed the 400 mm bridge — max chassis lift 80.0 mm (bridge = 80)
+PASS Drove down and over all four 40 mm speed breakers — rear axle passed y = 0.597 m
+PASS Placed completely inside the 80 x 80 mm square — cube centre offset (+2.4, +7.8) mm, z 25.0 mm
+  event {'t': 2.38, 'event': 'approach_error_mm', 'value': np.float64(1.7565412114861068)}
+  event {'t': 7.73, 'event': 'cube50_in_hand_offset_mm', 'value': [-24.8, 0.0, 4.7]}
+  event {'t': 7.73, 'event': 'cube50_lifted_to_mm', 'value': 106.4}
+  event {'t': 7.73, 'event': 'ik_unreachable', 'target': [0.19, 0.0, 0.2], 'err_mm': 4.687561893677257}
+  event {'t': 14.2, 'event': 'place_align_error_mm', 'value': np.float64(35.4474283292768)}
+  event {'t': 14.93, 'event': 'cube50_in_hand_offset_mm', 'value': [-24.9, 0.0, 12.0]}
+scenario A: ALL PASS in 26.2 s simulated
+video F:\Projects\thenar-walker\sim\out\mission_A_100rpm_4p9.mp4 794 frames

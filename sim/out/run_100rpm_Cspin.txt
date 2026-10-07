@@ -1,0 +1,25 @@
+  t=  0.01s  phase engage       robot (+0.480, +0.800)  fw state 1
+  t=  0.41s  phase unfold       robot (+0.480, +0.800)  fw state 1
+  t=  2.43s  phase approach     robot (+0.480, +0.800)  fw state 1
+  t=  5.38s  phase reach_450    robot (+0.849, +0.800)  fw state 1
+  t=  6.00s  phase grip         robot (+0.848, +0.800)  fw state 1
+  t=  6.80s  phase lift_off_pole robot (+0.848, +0.800)  fw state 1
+  t=  7.24s  phase back_off     robot (+0.843, +0.800)  fw state 1
+  t=  8.84s  phase carry        robot (+0.690, +0.800)  fw state 1
+  t= 10.22s  phase turn         robot (+0.690, +0.800)  fw state 1
+  t= 13.92s  phase align        robot (+0.587, +0.731)  fw state 1
+  t= 16.33s  phase lower        robot (+0.738, +0.913)  fw state 1
+  t= 22.39s  phase release      robot (+0.740, +0.916)  fw state 1
+  t= 26.84s  phase retract      robot (+0.733, +0.906)  fw state 1
+  t= 27.79s  phase done         robot (+0.733, +0.906)  fw state 1
+PASS Robot never tips (|roll| < 25 deg, |pitch| < 25 deg) — max |pitch| 0.1 deg, max |roll| 0.0 deg
+PASS Chassis / motors never touch an obstacle (only tyres do) — no contacts
+PASS Downy: 60 mm cube taken off the 400 mm pole — max cube centre 536 mm
+PASS Turned to face the target square (final aim error < 3 deg) — {"style": "spin in place", "duration_s": 3.7, "rotation_travelled_deg": 131.8, "final_aim_error_deg": -0.05, "peak_motor_current_A_total": 2.42, "mean_motor_current_A_total": 1.73, "mean_battery_current_A_motors": 0.83, "time_above_80pct_stall_s": 0.0}
+PASS Placed completely inside the 100 x 100 mm square — cube centre offset (-7.2, +1.4) mm, z 30.0 mm
+  event {'t': 2.42, 'event': 'approach_error_mm', 'value': np.float64(1.3378931360584767)}
+  event {'t': 7.23, 'event': 'cube60_lifted_off_pole_mm', 'value': np.float64(23.4)}
+  event {'t': 13.91, 'event': 'turn_in_place_final_error_deg', 'value': -0.05}
+  event {'t': 13.91, 'event': 'place_align_error_mm', 'value': np.float64(1.4457437938438233)}
+  event {'t': 16.32, 'event': 'cube60_in_hand_offset_mm', 'value': [-31.9, 8.7, 3.5]}
+scenario C: ALL PASS in 28.8 s simulated

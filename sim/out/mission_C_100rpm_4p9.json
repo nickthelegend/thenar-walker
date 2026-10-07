@@ -1,0 +1,83 @@
+{
+ "scenario": "C",
+ "sim_time_s": 52.76,
+ "events": [
+  {
+   "t": 2.42,
+   "event": "approach_error_mm",
+   "value": 1.3378931360584767
+  },
+  {
+   "t": 7.23,
+   "event": "cube60_lifted_off_pole_mm",
+   "value": 23.4
+  },
+  {
+   "t": 16.58,
+   "event": "arc_turn (reverse) heading error deg",
+   "value": -2.98
+  },
+  {
+   "t": 28.98,
+   "event": "arc_turn (forward) heading error deg",
+   "value": -4.54
+  },
+  {
+   "t": 32.77,
+   "event": "turn_in_place_final_error_deg",
+   "value": -0.0
+  },
+  {
+   "t": 32.77,
+   "event": "place_align_error_mm",
+   "value": 1.4184661834737433
+  },
+  {
+   "t": 38.67,
+   "event": "cube60_in_hand_offset_mm",
+   "value": [
+    -33.1,
+    8.4,
+    5.3
+   ]
+  }
+ ],
+ "checks": [
+  {
+   "check": "Robot never tips (|roll| < 25 deg, |pitch| < 25 deg)",
+   "pass": true,
+   "detail": "max |pitch| 0.4 deg, max |roll| 0.6 deg"
+  },
+  {
+   "check": "Chassis / motors never touch an obstacle (only tyres do)",
+   "pass": false,
+   "detail": "7146 contact steps, first (21610, 'wall_2', 'col_tub', 0.00011104678346955839)"
+  },
+  {
+   "check": "Downy: 60 mm cube taken off the 400 mm pole",
+   "pass": true,
+   "detail": "max cube centre 536 mm"
+  },
+  {
+   "check": "Turned to face the target square (final aim error < 3 deg)",
+   "pass": true,
+   "detail": "{\"style\": \"reverse arc + forward arc\", \"duration_s\": 22.6, \"rotation_travelled_deg\": 252.3, \"final_aim_error_deg\": -0.0, \"peak_motor_current_A_total\": 2.42, \"mean_motor_current_A_total\": 1.46, \"mean_battery_current_A_motors\": 0.62, \"time_above_80pct_stall_s\": 0.0}"
+  },
+  {
+   "check": "Placed completely inside the 100 x 100 mm square",
+   "pass": true,
+   "detail": "cube centre offset (+5.6, -13.3) mm, z 30.0 mm"
+  }
+ ],
+ "turn": {
+  "style": "reverse arc + forward arc",
+  "duration_s": 22.6,
+  "rotation_travelled_deg": 252.3,
+  "final_aim_error_deg": -0.0,
+  "peak_motor_current_A_total": 2.42,
+  "mean_motor_current_A_total": 1.46,
+  "mean_battery_current_A_motors": 0.62,
+  "time_above_80pct_stall_s": 0.0
+ },
+ "all_pass": false
+}

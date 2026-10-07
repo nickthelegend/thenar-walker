@@ -1,0 +1,74 @@
+{
+ "checks": [
+  {
+   "check": "No part touches another (motors, nuts, wheels, battery, boards, ESP32, kill switch, cage, tub)",
+   "pass": true,
+   "detail": "clear"
+  },
+  {
+   "check": "Facing left/right motors keep a gap in the middle",
+   "pass": true,
+   "detail": "12.0 mm (motor total length assumed 50)"
+  },
+  {
+   "check": "Gearbox to battery-cage boss gap",
+   "pass": true,
+   "detail": "3.25 mm"
+  },
+  {
+   "check": "Ground clearance \u2265 50 mm (lowest point except wheels)",
+   "pass": true,
+   "detail": "51.25 mm (gearbox bottom)"
+  },
+  {
+   "check": "Fits 300 \u00d7 200 (length \u00d7 width, wheels included)",
+   "pass": true,
+   "detail": "294.0 \u00d7 196.0 mm"
+  },
+  {
+   "check": "Shaft reaches into the wheel hub",
+   "pass": true,
+   "detail": "21 mm of shaft inside the hub (bore 28 deep)"
+  },
+  {
+   "check": "Wheel clears the tub wall and the nut",
+   "pass": true,
+   "detail": "1.0 mm (nut sits inside a 7 mm pocket)"
+  },
+  {
+   "check": "tub mesh is watertight",
+   "pass": true,
+   "detail": "9976 faces, 250.7 cm\u00b3"
+  },
+  {
+   "check": "cage mesh is watertight",
+   "pass": true,
+   "detail": "1320 faces, 24.3 cm\u00b3"
+  },
+  {
+   "check": "bar_L mesh is watertight",
+   "pass": true,
+   "detail": "356 faces, 1.4 cm\u00b3"
+  },
+  {
+   "check": "bar_R mesh is watertight",
+   "pass": true,
+   "detail": "356 faces, 1.4 cm\u00b3"
+  }
+ ],
+ "assumed_motor": {
+  "gearbox": [
+   37.5,
+   20.0
+  ],
+  "can": [
+   34.0,
+   22.0
+  ],
+  "cap": [
+   30.0,
+   8.0
+  ],
+  "total_length_from_face": 50.0
+ }
+}

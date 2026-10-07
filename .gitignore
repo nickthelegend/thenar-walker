@@ -1,0 +1,25 @@
+# secrets: team name, Wi-Fi password and link key (firmware/tools/new_key.py)
+firmware/libraries/ThenarLink/src/team_config.h
+
+# SolidWorks lock/temp files
+~$*
+*.SLDBAK
+cad/tools/.gen_py/
+
+# Python
+__pycache__/
+*.pyc
+
+# slicer outputs that are rebuilt from the plates
+*.gcode
+*_slicer.log
+# personal print hand-off bundle (rebuilt from cad/print)
+cad/print/friend_package/
+cad/print/Friend_Print_Package_*.zip
+
+# HyperFrames video project: renders go to the GitHub release, not the repo
+videos/*/renders/
+videos/*/snapshots/
+videos/*/renders_log.txt
+videos/*/.hyperframes/
+node_modules/
