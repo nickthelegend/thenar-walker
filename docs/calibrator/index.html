@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thenar Arm Calibrator</title>
+<style>
+  :root {
+    --bg: #0f151c; --panel: #161e28; --panel2: #1c2633; --line: #2c3846; --fg: #e6ecf2; --muted: #9aa8b8;
+    --accent: #e8834d; --ok: #4fd18f; --warn: #f2c230; --bad: #ff6a5e; --blue: #6ea2ff;
+    --mono: "Cascadia Mono", Consolas, "Courier New", monospace; --sans: "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--sans); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 18px 18px 60px; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 26px; margin: 0; letter-spacing: .01em; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: 18px; margin: 0 0 8px; }
+  h3 { font-size: 15px; margin: 0; color: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  button { font: 600 14px var(--sans); color: var(--fg); background: var(--panel2); border: 2px solid var(--line); border-radius: 8px; padding: 9px 14px; cursor: pointer; }
+  button:hover:not(:disabled), button:focus-visible { border-color: var(--accent); outline: none; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.big { font-size: 16px; padding: 12px 18px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #1a0f08; }
+  button.danger { background: #5c1813; border-color: var(--bad); color: #ffd9d5; }
+  button.jog { min-width: 64px; font-family: var(--mono); font-size: 16px; }
+  input[type=number], input[type=text] { font: 15px var(--mono); background: #0b1016; color: var(--fg); border: 2px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 110px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pill { display: inline-block; font: 600 12px var(--mono); padding: 4px 9px; border-radius: 99px; background: var(--panel2); color: var(--muted); border: 1px solid var(--line); }
+  .pill.ok { color: var(--ok); border-color: var(--ok); }
+  .pill.warn { color: var(--warn); border-color: var(--warn); }
+  .pill.bad { color: var(--bad); border-color: var(--bad); }
+  .joints { display: flex; flex-direction: column; gap: 8px; }
+  .jbtn { display: flex; justify-content: space-between; align-items: center; text-align: left; width: 100%; padding: 10px 12px; }
+  .jbtn.sel { border-color: var(--accent); background: #2a1d14; }
+  .jbtn small { color: var(--muted); font-weight: 400; }
+  .pulse { font: 700 44px/1 var(--mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .note { background: #2b2213; border: 1px solid #5a4520; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+  .note.red { background: #2c1513; border-color: #6a2a24; }
+  .refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .ref { border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--panel2); }
+  .ref b { color: var(--accent); }
+  table { border-collapse: collapse; width: 100%; font: 13px var(--mono); }
+  th, td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; }
+  .tbl { overflow-x: auto; }
+  pre { background: #0b1016; border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; font: 13px/1.45 var(--mono); margin: 0; }
+  #log { height: 180px; overflow-y: auto; white-space: pre-wrap; }
+  .steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+  details summary { cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Thenar <span>arm calibrator</span></h1>
+    <div class="row">
+      <span id="conn" class="pill bad">not connected</span>
+      <span id="pca" class="pill">PCA9685 ?</span>
+      <button id="btnConnect" class="primary big">Connect ESP32</button>
+      <button id="btnOff" class="danger big" disabled>ALL SERVOS OFF</button>
+    </div>
+  </header>
+
+  <div id="noserial" class="note red" hidden>This browser has no Web Serial. Open this page in <b>Chrome</b> or <b>Edge</b> on a computer (not a phone).</div>
+
+  <details class="panel">
+    <summary>Before you start (read once)</summary>
+    <ol class="steps">
+      <li>The ESP32-S3 runs <b>firmware/arm_calibration</b> (already flashed). PCA9685 on SDA 8, SCL 9, OE 10.</li>
+      <li>Servo power: <b>6 V buck → PCA9685 V+ / GND</b>, never from USB. Put a 470–1000 µF capacitor across V+/GND if you have one.</li>
+      <li>Do <b>one joint at a time</b>. When you press <b>Start this joint</b> the servo jumps to its start pulse at full speed (a servo has no position sensor). Keep fingers and cables clear. <b>ALL SERVOS OFF</b> makes everything limp.</li>
+      <li>Order: gripper → wrist roll → wrist flex → base pan → elbow → shoulder (light joints first, the heavy shoulder last).</li>
+      <li>For each joint: jog to <b>Reference A</b>, press <b>Set A</b>; jog to <b>Reference B</b>, press <b>Set B</b>. The app works out zero, direction and µs per degree. Then jog to each safe end (stop 3–5° before anything touches) and press <b>Set end</b> twice. <b>Test</b>, then <b>Mark joint done</b>.</li>
+      <li>When all 6 are done: <b>Save to robot</b> (stored on the ESP32) and copy <b>calibration.h</b> into firmware/thenar_walker_bot/.</li>
+      <li>If the zero pulse lands outside about 1200–1800 µs, move the horn one spline tooth and redo the joint — otherwise one end of the range is too short.</li>
+    </ol>
+  </details>
+
+  <div class="grid">
+    <div class="panel">
+      <h3>Joints</h3>
+      <div id="jointList" class="joints"></div>
+      <div class="row"><span class="muted">Slew speed</span><input id="rate" type="range" min="100" max="800" step="50" value="300"><span id="rateVal" class="muted">300 µs/s</span></div>
+      <div class="note"><b>Shoulder won't move / jitters?</b> Measure V+ at the PCA9685 while the shoulder moves: below <b>5.5 V</b> = supply or wires too weak (use the 6 V ≥ 10 A buck, 18 AWG or thicker, add the capacitor). If it moves fine with the horn off but not on the arm, it's load or binding — not calibration.</div>
+    </div>
+
+    <div class="panel">
+      <div class="row" style="justify-content: space-between">
+        <div><h2 id="jTitle">Pick a joint</h2><div id="jDesc" class="muted"></div></div>
+        <div class="row"><span id="jState" class="pill">not started</span></div>
+      </div>
+
+      <div class="row">
+        <button id="btnStart" class="primary big" disabled>Start this joint</button>
+        <span class="muted">start pulse <input id="startUs" type="number" min="500" max="2500" step="10" value="1500"> µs</span>
+        <button id="btnRel" disabled>Release this joint</button>
+      </div>
+
+      <div class="row" style="align-items: flex-end; gap: 18px">
+        <div><div class="muted">pulse</div><div id="pulse" class="pulse">----</div></div>
+        <div class="row">
+          <button class="jog" data-d="-50" disabled>−50</button><button class="jog" data-d="-10" disabled>−10</button>
+          <button class="jog" data-d="-2" disabled>−2</button><button class="jog" data-d="2" disabled>+2</button>
+          <button class="jog" data-d="10" disabled>+10</button><button class="jog" data-d="50" disabled>+50</button>
+        </div>
+      </div>
+      <input id="slider" type="range" min="500" max="2500" step="2" value="1500" disabled>
+      <div class="row"><span class="muted">keyboard: ← → = ±10, Shift = ±50, Alt = ±2</span></div>
+
+      <div class="refs">
+        <div class="ref"><div><b>Reference A</b> · <span id="refAq"></span>°</div><div id="refAtxt"></div>
+          <div class="row"><button id="btnSetA" disabled>Set A here</button><span id="valA" class="muted">—</span></div></div>
+        <div class="ref"><div><b>Reference B</b> · <span id="refBq"></span>°</div><div id="refBtxt"></div>
+          <div class="row"><button id="btnSetB" disabled>Set B here</button><span id="valB" class="muted">—</span>
+          <span class="muted">angle</span><input id="refBedit" type="number" step="0.1" style="width:80px"></div></div>
+      </div>
+
+      <div class="row">
+        <span>Result:</span><span id="calOut" class="pill">needs A and B</span>
+      </div>
+
+      <div class="row">
+        <button id="btnEnd" disabled>Set safe end here</button>
+        <span id="endsOut" class="muted">ends: — / —</span>
+        <button id="btnClearEnds" disabled>Clear ends</button>
+      </div>
+
+      <div class="row">
+        <span class="muted">Test:</span>
+        <input id="goDeg" type="number" step="1" value="0" style="width:90px"><button id="btnGo" disabled>Go to angle</button>
+        <button id="btnZero" disabled>Go to 0°</button><button id="btnSweep" disabled>Sweep ends</button>
+      </div>
+
+      <div class="row">
+        <button id="btnDone" class="primary" disabled>Mark joint done</button>
+        <button id="btnReset">Reset this joint</button>
+      </div>
+      <div id="jMsg" class="muted"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="justify-content: space-between">
+      <h2>All joints</h2>
+      <div class="row">
+        <button id="btnLoad" disabled>Load from robot</button>
+        <button id="btnSave" class="primary" disabled>Save to robot</button>
+        <button id="btnCopy">Copy calibration.h</button>
+      </div>
+    </div>
+    <div class="tbl"><table id="sumTable"></table></div>
+    <pre id="calH"></pre>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="justify-content: space-between"><h3>Serial log</h3>
+      <div class="row"><input id="rawCmd" type="text" placeholder="raw command, e.g. SCAN" style="width:260px"><button id="btnRaw" disabled>Send</button></div></div>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------- joint definitions (from the robot's MuJoCo model)
+// pulse = zero + q * usPerDeg * sign. q is the logical joint angle used by the robot firmware.
+const JOINTS = [
+  { name: 'shoulder_pan', label: 'Base pan (J1)', lo: -85, hi: 85, order: 4,
+    desc: 'Turns the whole arm on the base. + = clockwise seen from above (toward the robot\'s right).',
+    a: { q: 0, t: 'Arm points straight <b>forward</b>, parallel to the robot\'s long side.' },
+    b: { q: 90, t: 'Arm points straight to the robot\'s <b>right</b> side (90° clockwise from above). Can\'t reach? Use 45° with the protractor and change the angle.' } },
+  { name: 'shoulder_lift', label: 'Shoulder lift (J2)', lo: -80, hi: 80, order: 6,
+    desc: 'Tilts the upper arm. + = leans forward. Heaviest joint — check the supply first if it struggles.',
+    a: { q: -13.9, t: 'Upper arm <b>vertical</b>: the line through the shoulder pivot and the elbow pivot is straight up (set square on the deck).' },
+    b: { q: 31.1, t: 'Upper arm leaning <b>45° forward</b> (same pivot line, 45° from vertical, toward the front).' } },
+  { name: 'elbow_flex', label: 'Elbow (J3)', lo: -80, hi: 80, order: 5,
+    desc: 'Bends the forearm against the upper arm. + = forearm bends forward/down.',
+    a: { q: -73.8, t: 'Arm <b>straight</b>: forearm in line with the upper arm (elbow fully opened).' },
+    b: { q: 16.2, t: 'Arm in an <b>L</b>: forearm at 90° to the upper arm (set square in the elbow).' } },
+  { name: 'wrist_flex', label: 'Wrist flex (J4)', lo: -80, hi: 80, order: 3,
+    desc: 'Tips the gripper up/down against the forearm. + = gripper tips down.',
+    a: { q: -2.3, t: 'Gripper <b>straight</b>, its long axis in line with the forearm.' },
+    b: { q: 42.7, t: 'Gripper bent <b>45° down</b> from the forearm line.' } },
+  { name: 'wrist_roll', label: 'Wrist roll (J5)', lo: -85, hi: 85, order: 2,
+    desc: 'Rotates the gripper. + = clockwise when you face the gripper from the front of the robot.',
+    a: { q: 0, t: 'Jaws <b>one above the other</b> (moving jaw on top; they open up/down).' },
+    b: { q: 90, t: 'A quarter turn <b>clockwise</b> (facing the gripper): jaws side by side. Can\'t reach? use 45°.' } },
+  { name: 'gripper', label: 'Gripper (J6)', lo: 0, hi: 70, order: 1,
+    desc: 'Opens the moving jaw. + = opens. Measure between the jaw tips with a ruler.',
+    a: { q: 0, t: 'Jaw tips <b>20 mm</b> apart.' },
+    b: { q: 30, t: 'Jaw tips <b>60 mm</b> apart.' } },
+];
+const DISPLAY_ORDER = [5, 4, 3, 0, 2, 1];
+
+// ---------------------------------------------------------------- state (kept in this browser too)
+const KEY = 'thenar-armcal-v1';
+let S = loadState();
+function blankJoint(i) { return { a: null, b: null, bq: JOINTS[i].b.q, ends: [], done: false }; }
+function loadState() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.j && s.j.length === 6) return s; } catch (e) {}
+  return { j: JOINTS.map((_, i) => blankJoint(i)), sel: 5 };
+}
+function saveState() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+function calOf(i) {               // zero / slope / sign from the two references
+  const J = S.j[i], d = JOINTS[i];
+  if (!J.a || !J.b) return null;
+  const qa = d.a.q, qb = J.bq;
+  if (Math.abs(qb - qa) < 10) return { err: 'references must be at least 10° apart' };
+  const k = (J.b - J.a) / (qb - qa);             // signed us per degree
+  const usdeg = Math.abs(k), sign = k >= 0 ? 1 : -1, zero = J.a - qa * k;
+  if (usdeg < 3 || usdeg > 20) return { err: `${usdeg.toFixed(2)} µs/° is not plausible (3–20). Re-check A and B.`, usdeg, sign, zero };
+  if (zero < 500 || zero > 2500) return { err: `zero ${zero.toFixed(0)} µs is outside 500–2500`, usdeg, sign, zero };
+  return { usdeg, sign, zero };
+}
+function endsOf(i) { const e = S.j[i].ends; return e.length === 2 ? [Math.min(...e), Math.max(...e)] : null; }
+function pulseFor(i, q) { const c = calOf(i); return c && !c.err ? c.zero + q * c.usdeg * c.sign : null; }
+function angleFor(i, us) { const c = calOf(i); return c && !c.err ? (us - c.zero) / (c.usdeg * c.sign) : null; }
+function jointReady(i) {
+  const c = calOf(i), e = endsOf(i);
+  if (!c || c.err) return 'needs A and B';
+  if (!e) return 'needs both safe ends';
+  if (!(e[0] < c.zero && c.zero < e[1])) return 'zero is outside the safe ends';
+  return '';
+}
+
+// ---------------------------------------------------------------- serial
+let port = null, writer = null, reading = false, lineBuf = '', waiters = [], live = [false, false, false, false, false, false], cur = [0, 0, 0, 0, 0, 0];
+const logEl = document.getElementById('log');
+function log(s, cls) { logEl.textContent += s + '\n'; if (logEl.textContent.length > 20000) logEl.textContent = logEl.textContent.slice(-15000); logEl.scrollTop = logEl.scrollHeight; }
+
+async function connect() {
+  if (!('serial' in navigator)) { document.getElementById('noserial').hidden = false; return; }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    try { await port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) {}
+    writer = port.writable.getWriter();
+    readLoop();
+    setConn('connecting…', 'warn');
+    await sleep(1200);
+    const r = await cmd('HELLO', 2500).catch(() => null) || await cmd('HELLO', 2500).catch(() => null);
+    if (!r || !r.startsWith('OK HELLO')) { setConn('no reply — is arm_calibration flashed?', 'bad'); return; }
+    const pca = / pca=1/.test(r);
+    setConn('connected', 'ok');
+    const pp = document.getElementById('pca'); pp.textContent = pca ? 'PCA9685 found' : 'PCA9685 NOT found'; pp.className = 'pill ' + (pca ? 'ok' : 'bad');
+    await cmd('RATE ' + document.getElementById('rate').value);
+    await cmd('OFF');
+    live = live.map(() => false);
+    enableAll(true);
+    render();
+  } catch (e) { log('connect failed: ' + e.message); setConn('not connected', 'bad'); }
+}
+async function readLoop() {
+  reading = true;
+  const dec = new TextDecoder();
+  const reader = port.readable.getReader();
+  try {
+    while (reading) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      lineBuf += dec.decode(value, { stream: true });
+      let k;
+      while ((k = lineBuf.indexOf('\n')) >= 0) {
+        const line = lineBuf.slice(0, k).replace('\r', ''); lineBuf = lineBuf.slice(k + 1);
+        if (!line.trim()) continue;
+        log('← ' + line);
+        const w = waiters[0];
+        if (w) { if (/^(OK|ERR)/.test(line)) { waiters.shift(); w.res(w.extra.concat([line]).join('\n')); } else w.extra.push(line); }
+      }
+    }
+  } catch (e) { log('serial closed: ' + e.message); }
+  finally { reader.releaseLock(); setConn('disconnected', 'bad'); enableAll(false); }
+}
+let chain = Promise.resolve();
+function cmd(c, timeout = 2000) {
+  const p = chain.then(() => new Promise(async (res, rej) => {
+    const w = { res, extra: [] };
+    waiters.push(w);
+    log('→ ' + c);
+    try { await writer.write(new TextEncoder().encode(c + '\n')); } catch (e) { waiters.splice(waiters.indexOf(w), 1); rej(e); return; }
+    setTimeout(() => { const i = waiters.indexOf(w); if (i >= 0) { waiters.splice(i, 1); rej(new Error('timeout: ' + c)); } }, timeout);
+  }));
+  chain = p.catch(() => {});
+  return p;
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function setConn(t, cls) { const c = document.getElementById('conn'); c.textContent = t; c.className = 'pill ' + cls; }
+
+// ---------------------------------------------------------------- motion helpers
+const sel = () => S.sel;
+async function sendPulse(i, us) {
+  const e = endsOf(i);
+  us = Math.round(Math.max(500, Math.min(2500, us)));
+  if (e && S.j[i].lockEnds !== false && (us < e[0] || us > e[1])) { msg(`Blocked: ${us} µs is outside the safe ends ${e[0]}–${e[1]}. Clear ends to go further.`); us = Math.max(e[0], Math.min(e[1], us)); }
+  const r = await cmd(`P ${i} ${us}`).catch((x) => 'ERR ' + x.message);
+  if (r.startsWith('OK')) { cur[i] = us; live[i] = true; }
+  else msg(r);
+  render();
+  return r.startsWith('OK');
+}
+let jogBusy = false, pendingJog = 0;
+async function jog(d) {
+  const i = sel(); if (!live[i]) { msg('Press "Start this joint" first.'); return; }
+  pendingJog += d;
+  if (jogBusy) return;
+  jogBusy = true;
+  while (pendingJog) { const s = pendingJog; pendingJog = 0; await sendPulse(i, cur[i] + s); }
+  jogBusy = false;
+}
+function travelMs(from, to) { return Math.abs(to - from) / Number(document.getElementById('rate').value) * 1000 + 300; }
+async function moveAndWait(i, us) { const from = cur[i]; if (await sendPulse(i, us)) await sleep(travelMs(from, cur[i])); }
+
+// ---------------------------------------------------------------- UI
+const $ = (id) => document.getElementById(id);
+function msg(t) { $('jMsg').textContent = t; }
+function enableAll(on) {
+  document.querySelectorAll('button').forEach((b) => { if (!['btnConnect', 'btnCopy', 'btnReset'].includes(b.id)) b.disabled = !on; });
+  $('slider').disabled = !on;
+}
+function render() {
+  const list = $('jointList'); list.innerHTML = '';
+  DISPLAY_ORDER.forEach((i, n) => {
+    const d = JOINTS[i], J = S.j[i];
+    const b = document.createElement('button');
+    b.className = 'jbtn' + (S.sel === i ? ' sel' : '');
+    const st = J.done ? '<span class="pill ok">done</span>' : live[i] ? '<span class="pill warn">holding</span>' : '<span class="pill">—</span>';
+    b.innerHTML = `<span>${n + 1}. ${d.label}<br><small>ch ${i} · ${d.lo}…${d.hi}°</small></span>${st}`;
+    b.onclick = () => { S.sel = i; saveState(); render(); };
+    list.appendChild(b);
+  });
+  const i = sel(), d = JOINTS[i], J = S.j[i];
+  $('jTitle').textContent = `${d.label} — channel ${i}`;
+  $('jDesc').textContent = d.desc;
+  $('refAq').textContent = d.a.q; $('refAtxt').innerHTML = d.a.t;
+  $('refBq').textContent = J.bq; $('refBtxt').innerHTML = d.b.t; $('refBedit').value = J.bq;
+  $('valA').textContent = J.a ? `A = ${J.a} µs` : '—';
+  $('valB').textContent = J.b ? `B = ${J.b} µs` : '—';
+  const c = calOf(i);
+  const co = $('calOut');
+  if (!c) { co.textContent = 'needs A and B'; co.className = 'pill'; }
+  else if (c.err) { co.textContent = c.err; co.className = 'pill bad'; }
+  else { co.textContent = `zero ${c.zero.toFixed(0)} µs · ${c.usdeg.toFixed(3)} µs/° · sign ${c.sign > 0 ? '+1' : '−1'}`; co.className = 'pill ' + (c.zero < 1200 || c.zero > 1800 ? 'warn' : 'ok'); }
+  const e = endsOf(i);
+  $('endsOut').textContent = e ? `ends: ${e[0]} / ${e[1]} µs` + (c && !c.err ? ` (${angleFor(i, e[0]).toFixed(0)}° … ${angleFor(i, e[1]).toFixed(0)}°)` : '') : `ends: ${J.ends.join(' / ') || '— / —'}`;
+  $('pulse').textContent = live[i] ? cur[i] : '----';
+  if (live[i]) $('slider').value = cur[i];
+  const js = $('jState');
+  js.textContent = J.done ? 'done' : live[i] ? 'holding ' + cur[i] + ' µs' + (c && !c.err ? ` ≈ ${angleFor(i, cur[i]).toFixed(1)}°` : '') : 'limp';
+  js.className = 'pill ' + (J.done ? 'ok' : live[i] ? 'warn' : '');
+  $('startUs').value = J.done && c && !c.err ? Math.round(c.zero) : ($('startUs').value || 1500);
+  const ready = jointReady(i);
+  $('btnDone').title = ready || 'all good';
+  renderSummary();
+}
+function renderSummary() {
+  const rows = [['joint', 'zero µs', 'µs/°', 'sign', 'min µs', 'max µs', 'range °', 'status']];
+  JOINTS.forEach((d, i) => {
+    const c = calOf(i), e = endsOf(i), J = S.j[i];
+    const ok = c && !c.err;
+    rows.push([`${i} ${d.name}`, ok ? c.zero.toFixed(0) : '—', ok ? c.usdeg.toFixed(3) : '—', ok ? c.sign : '—', e ? e[0] : '—', e ? e[1] : '—',
+      ok && e ? `${angleFor(i, e[0]).toFixed(0)}…${angleFor(i, e[1]).toFixed(0)}` : '—', J.done ? 'DONE' : (jointReady(i) || 'ready to mark done')]);
+  });
+  $('sumTable').innerHTML = rows.map((r, k) => '<tr>' + r.map((x) => k ? `<td>${x}</td>` : `<th>${x}</th>`).join('') + '</tr>').join('');
+  $('calH').textContent = calHeader();
+}
+function calHeader() {
+  const all = S.j.every((J) => J.done);
+  const val = (f, dflt) => JOINTS.map((_, i) => { const c = calOf(i), e = endsOf(i); return S.j[i].done && c && !c.err && e ? f(c, e) : dflt; });
+  const fmt = (a, n) => a.map((x) => typeof x === 'number' ? (n === 0 ? String(Math.round(x)) : x.toFixed(n)) : x).join(', ');
+  return [
+    '#pragma once',
+    '// MG996R pulse calibration — measured with docs/calibrator (Thenar arm calibrator).',
+    '// pulse_us = SERVO_ZERO_US + q_deg * US_PER_DEGREE * SERVO_SIGN; PULSE_MIN/MAX = measured safe ends.',
+    `constexpr bool FOLLOWER_CALIBRATED = ${all ? 'true' : 'false'};`,
+    `constexpr float SERVO_ZERO_US[6] = {${fmt(val((c) => c.zero, 1500), 1)}};`,
+    `constexpr float US_PER_DEGREE[6] = {${fmt(val((c) => c.usdeg, 5.555556), 6)}};`,
+    `constexpr int SERVO_SIGN[6] = {${val((c) => c.sign, 1).join(', ')}};`,
+    `constexpr float PULSE_MIN_US[6] = {${fmt(val((c, e) => e[0], 1000), 0)}};`,
+    `constexpr float PULSE_MAX_US[6] = {${fmt(val((c, e) => e[1], 2000), 0)}};`,
+    'constexpr float PCA_CLOCK_HZ = 25000000;',
+  ].join('\n');
+}
+
+// ---------------------------------------------------------------- buttons
+$('btnConnect').onclick = connect;
+$('btnOff').onclick = async () => { await cmd('OFF').catch(() => {}); live = live.map(() => false); msg('All servos limp.'); render(); };
+$('btnStart').onclick = async () => {
+  const i = sel(), us = Number($('startUs').value) || 1500;
+  msg(`Channel ${i} jumps to ${us} µs now.`);
+  await sendPulse(i, us);
+};
+$('btnRel').onclick = async () => { const i = sel(); await cmd(`REL ${i}`).catch(() => {}); live[i] = false; render(); };
+document.querySelectorAll('button.jog').forEach((b) => b.onclick = () => jog(Number(b.dataset.d)));
+let sliderT = null;
+$('slider').oninput = () => { const i = sel(); if (!live[i]) return; clearTimeout(sliderT); sliderT = setTimeout(() => sendPulse(i, Number($('slider').value)), 80); };
+$('rate').oninput = () => { $('rateVal').textContent = $('rate').value + ' µs/s'; };
+$('rate').onchange = () => { cmd('RATE ' + $('rate').value).catch(() => {}); };
+$('btnSetA').onclick = () => { const i = sel(); if (!live[i]) return msg('Start the joint first.'); S.j[i].a = cur[i]; S.j[i].done = false; saveState(); render(); };
+$('btnSetB').onclick = () => { const i = sel(); if (!live[i]) return msg('Start the joint first.'); S.j[i].b = cur[i]; S.j[i].done = false; saveState(); render(); };
+$('refBedit').onchange = () => { const i = sel(); const v = Number($('refBedit').value); if (isFinite(v)) { S.j[i].bq = v; S.j[i].done = false; saveState(); render(); } };
+$('btnEnd').onclick = () => {
+  const i = sel(); if (!live[i]) return msg('Start the joint first.');
+  const J = S.j[i]; if (J.ends.length >= 2) J.ends = []; J.ends.push(cur[i]); J.done = false; saveState(); render();
+};
+$('btnClearEnds').onclick = () => { const i = sel(); S.j[i].ends = []; S.j[i].done = false; saveState(); render(); };
+$('btnGo').onclick = async () => {
+  const i = sel(), q = Number($('goDeg').value), us = pulseFor(i, q);
+  if (us == null) return msg('Set A and B first.');
+  if (q < JOINTS[i].lo || q > JOINTS[i].hi) return msg(`${q}° is outside this joint's range ${JOINTS[i].lo}…${JOINTS[i].hi}°.`);
+  if (!live[i]) return msg('Start the joint first.');
+  await sendPulse(i, us);
+};
+$('btnZero').onclick = () => { $('goDeg').value = 0; $('btnGo').onclick(); };
+$('btnSweep').onclick = async () => {
+  const i = sel(), e = endsOf(i), c = calOf(i);
+  if (!e) return msg('Set both safe ends first.');
+  if (!live[i]) return msg('Start the joint first.');
+  msg('Sweeping…');
+  await moveAndWait(i, e[0]); await moveAndWait(i, e[1]);
+  await moveAndWait(i, c && !c.err ? c.zero : (e[0] + e[1]) / 2);
+  msg('Sweep finished.');
+};
+$('btnDone').onclick = () => {
+  const i = sel(), r = jointReady(i);
+  if (r) return msg('Not yet: ' + r + '.');
+  S.j[i].done = true; saveState();
+  const next = DISPLAY_ORDER.find((k) => !S.j[k].done);
+  msg('Joint saved in this browser.' + (next != null ? ` Next: ${JOINTS[next].label}.` : ' All 6 done — press Save to robot.'));
+  if (next != null) S.sel = next;
+  saveState(); render();
+};
+$('btnReset').onclick = () => { const i = sel(); S.j[i] = blankJoint(i); saveState(); render(); msg('Joint reset.'); };
+$('btnSave').onclick = async () => {
+  for (let i = 0; i < 6; i++) {
+    const c = calOf(i), e = endsOf(i), J = S.j[i];
+    if (c && !c.err && e) await cmd(`CAL ${i} ${c.zero.toFixed(1)} ${c.usdeg.toFixed(5)} ${c.sign} ${e[0]} ${e[1]} ${J.done ? 1 : 0}`);
+  }
+  const r = await cmd('CALSAVE').catch((x) => 'ERR ' + x.message);
+  msg(r.startsWith('OK') ? `Saved on the robot (${r.replace('OK CALSAVE ', '')}). The robot firmware will use it.` : 'Save failed: ' + r);
+};
+$('btnLoad').onclick = async () => {
+  const r = await cmd('CALGET').catch((x) => 'ERR ' + x.message);
+  r.split('\n').forEach((l) => {
+    const m = l.match(/^CAL (\d) ([\d.]+) ([\d.]+) (-?1) ([\d.]+) ([\d.]+) (\d)/);
+    if (!m) return;
+    const i = Number(m[1]), zero = Number(m[2]), usdeg = Number(m[3]), sign = Number(m[4]), done = m[7] === '1';
+    if (!done) return;
+    const qa = JOINTS[i].a.q, qb = S.j[i].bq;
+    S.j[i] = { a: Math.round(zero + qa * usdeg * sign), b: Math.round(zero + qb * usdeg * sign), bq: qb, ends: [Number(m[5]), Number(m[6])], done: true };
+  });
+  saveState(); render(); msg('Loaded the robot\'s saved calibration (joints marked done there).');
+};
+$('btnCopy').onclick = async () => {
+  try { await navigator.clipboard.writeText(calHeader()); msg('calibration.h copied — paste it into firmware/thenar_walker_bot/calibration.h'); }
+  catch (e) { const r = document.createRange(); r.selectNodeContents($('calH')); getSelection().removeAllRanges(); getSelection().addRange(r); msg('Select-all done — press Ctrl+C.'); }
+};
+$('btnRaw').onclick = async () => { const v = $('rawCmd').value.trim(); if (v) { await cmd(v).catch((e) => log('! ' + e.message)); $('rawCmd').value = ''; } };
+document.addEventListener('keydown', (ev) => {
+  if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') {
+    ev.preventDefault();
+    const d = (ev.key === 'ArrowRight' ? 1 : -1) * (ev.shiftKey ? 50 : ev.altKey ? 2 : 10);
+    jog(d);
+  }
+});
+if (!('serial' in navigator)) document.getElementById('noserial').hidden = false;
+render();
+</script>
+</body>
+</html>
