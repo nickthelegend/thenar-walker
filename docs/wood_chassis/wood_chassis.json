@@ -1,0 +1,162 @@
+{
+ "checks": {
+  "ground_clearance_wall_bottom": 50.0,
+  "ground_clearance_gearbox_bottom": 51.25,
+  "gearbox_top_below_deck": 11.25,
+  "gap_between_left_and_right_motor_tips": 26.0,
+  "floor_end_to_gearbox": 3.25,
+  "collar_left_for_the_nut": 7.0,
+  "nut_fits": true,
+  "wheel_inner_face_y": 76.0,
+  "overall_width": 208.0,
+  "battery_to_motor": 5.25,
+  "wood_used": "365 x 240 board: deck + 2 walls from the left 250 mm, floor + 4 pads from the right 114 mm"
+ },
+ "pieces": {
+  "deck": [
+   250.0,
+   138.0
+  ],
+  "side_wall": [
+   250.0,
+   50.0
+  ],
+  "floor": [
+   110.0,
+   132.0
+  ],
+  "pad": [
+   45.0,
+   40.0
+  ]
+ },
+ "deck_holes": [
+  {
+   "id": "B5",
+   "x_from_left": 23.8,
+   "y_from_front_edge_view_bottom": 100.7,
+   "dia": 3.4,
+   "use": "arm base: M3 × 20 + washer + nyloc"
+  },
+  {
+   "id": "B6",
+   "x_from_left": 23.8,
+   "y_from_front_edge_view_bottom": 37.3,
+   "dia": 3.4,
+   "use": "arm base: M3 × 20 + washer + nyloc"
+  },
+  {
+   "id": "B7",
+   "x_from_left": 93.5,
+   "y_from_front_edge_view_bottom": 96.8,
+   "dia": 3.4,
+   "use": "arm base: M3 × 20 + washer + nyloc"
+  },
+  {
+   "id": "B8",
+   "x_from_left": 93.5,
+   "y_from_front_edge_view_bottom": 41.2,
+   "dia": 3.4,
+   "use": "arm base: M3 × 20 + washer + nyloc"
+  },
+  {
+   "id": "C9",
+   "x_from_left": 138.1,
+   "y_from_front_edge_view_bottom": 76.1,
+   "dia": 3.4,
+   "use": "motor driver MDD10A: M3 × 16 + 6 mm spacer + nut"
+  },
+  {
+   "id": "C10",
+   "x_from_left": 138.1,
+   "y_from_front_edge_view_bottom": 131.9,
+   "dia": 3.4,
+   "use": "motor driver MDD10A: M3 × 16 + 6 mm spacer + nut"
+  },
+  {
+   "id": "C11",
+   "x_from_left": 216.9,
+   "y_from_front_edge_view_bottom": 76.1,
+   "dia": 3.4,
+   "use": "motor driver MDD10A: M3 × 16 + 6 mm spacer + nut"
+  },
+  {
+   "id": "C12",
+   "x_from_left": 216.9,
+   "y_from_front_edge_view_bottom": 131.9,
+   "dia": 3.4,
+   "use": "motor driver MDD10A: M3 × 16 + 6 mm spacer + nut"
+  },
+  {
+   "id": "D13",
+   "x_from_left": 119.0,
+   "y_from_front_edge_view_bottom": 39.0,
+   "dia": 2.8,
+   "use": "ESP32: M2.5 × 10 brass standoffs underneath"
+  },
+  {
+   "id": "D14",
+   "x_from_left": 71.0,
+   "y_from_front_edge_view_bottom": 39.0,
+   "dia": 2.8,
+   "use": "ESP32: M2.5 × 10 brass standoffs underneath"
+  }
+ ],
+ "deck_windows": [
+  {
+   "id": "K",
+   "x0": 104.9,
+   "x1": 127.1,
+   "y0": 100.9,
+   "y1": 131.1,
+   "use": "kill switch cut-out (KCD4 snaps in)"
+  },
+  {
+   "id": "S1",
+   "x0": 108.2,
+   "x1": 120.2,
+   "y0": 54.0,
+   "y1": 84.0,
+   "use": "slot: servo leads + driver signal wires"
+  },
+  {
+   "id": "S2",
+   "x0": 223.0,
+   "x1": 235.0,
+   "y0": 91.0,
+   "y1": 121.0,
+   "use": "slot: motor + battery wires to the driver"
+  }
+ ],
+ "deck_brackets_x": [
+  -38.0,
+  38.0
+ ],
+ "floor_brackets_x": [
+  -15.0,
+  15.0
+ ],
+ "tie_holes": [
+  [
+   -30.0,
+   -21.0
+  ],
+  [
+   -30.0,
+   21.0
+  ],
+  [
+   30.0,
+   -21.0
+  ],
+  [
+   30.0,
+   21.0
+  ]
+ ],
+ "wall_m8_holes_from_end": [
+  48.0,
+  202.0
+ ],
+ "wall_m8_from_top": 30.0
+}
