@@ -62,6 +62,8 @@ Full measured results: **[docs/VERIFICATION.md](docs/VERIFICATION.md)** (SolidWo
 | `analysis/` | URDF kinematics, collision-aware stow search, gripper opening, drive sizing |
 | `sim/` | MuJoCo model of robot + arena, firmware-in-the-loop bridge, mission scenarios, videos (`sim/out/`) |
 | `firmware/` | Robot + controller ESP32 sketches, shared `ThenarLink` library, host unit tests |
+| `mobile/` | **Thenar Remote** Expo app (Android): drive + arm + Bluetooth game controller over the robot Wi-Fi — see [mobile/README.md](mobile/README.md) |
+| `docs/calibrator/` | Browser arm calibrator (Web Serial) |
 | `docs/` | [BOM](docs/BOM.md) · [Wiring](docs/WIRING.md) · [Build guide](docs/ASSEMBLY.md) · [Design notes](docs/DESIGN.md) · [Verification](docs/VERIFICATION.md) · [Simulation](docs/SIMULATION.md) |
 
 | | |

@@ -252,6 +252,7 @@ void sendJson(bool full) {
   }
   s += "}";
   server.sendHeader("Cache-Control", "no-store");
+  server.sendHeader("Access-Control-Allow-Origin", "*");   // the Thenar Remote app (web build) reads this too
   server.send(200, "application/json", s);
 }
 
@@ -260,7 +261,7 @@ void sendJson(bool full) {
 void handleCmd() {
   lastCmd = millis();
   phone = true;
-  if (server.hasArg("stop")) { phoneThr = phoneTrn = 0; stopAll(); sendJson(false); return; }
+  if (server.hasArg("stop")) { stopAll(); sendJson(false); return; }   // keep the last stick: the latch needs it centred
   int thr = 0, trn = 0;
   if (sscanf(server.arg("d").c_str(), "%d,%d", &thr, &trn) == 2) { phoneThr = thr / 100.0f; phoneTrn = trn / 100.0f; }
   else phoneThr = phoneTrn = 0;
