@@ -1,0 +1,30 @@
+{
+ "numbers": {
+  "overall_width": 198.0,
+  "overall_length": 290.0,
+  "wheelbase": 150.0,
+  "bracket_face_in_from_board_edge": 12.0,
+  "gap_between_motor_tips": 14.0,
+  "nut_to_wheel": 5.5,
+  "deck_underside_z": 91.0,
+  "deck_top_z": 94.0,
+  "ground_clearance_gearbox": 51.25,
+  "room_under_deck_for_electronics_mm": 41.0,
+  "electronics_zone_x": [
+   -50.5,
+   54.5
+  ],
+  "rear_bracket_to_arm_screw_B": 5.699999999999999
+ },
+ "axles_x": [
+  -73.0,
+  77.0
+ ],
+ "bracket_face_y": 57.0,
+ "assumed": {
+  "bracket_width": 45.0,
+  "bracket_base_depth": 30.0,
+  "axis_below_board": 21.0,
+  "motor_length_from_face": 50.0
+ }
+}
