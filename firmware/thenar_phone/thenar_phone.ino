@@ -54,6 +54,8 @@ uint8_t prescale = 121;
 int speed = 1;                                   // 0 slow, 1 mid, 2 fast (tw::SPEED_SCALE)
 float lo[6], hi[6], goal[6], cur[6];
 bool on[6];
+bool raw[6];                                    // channel driven by the calibrator in plain microseconds
+float rawCur[6], rawTgt[6], rawRate = 300;      // us, us/s
 float wheelT[2] = {0, 0}, wheel[2] = {0, 0};
 float phoneThr = 0, phoneTrn = 0, padThr = 0, padTrn = 0;
 uint32_t lastCmd = 0, lastTick = 0;
@@ -67,18 +69,22 @@ void chanOff(int ch) {   // full-off bit: no pulse, the servo goes limp
   Wire.endTransmission();
 }
 
-void servoWrite(int ch, float q) {
-  float us = tw::armcal_pulse(cal, ch, q);
-  if (!tw::armcal_pulse_ok(cal, ch, us)) { chanOff(ch); on[ch] = false; return; }   // never outside the safe ends
+void chanPulse(int ch, float us) {
   uint16_t count = lroundf(us * PCA_CLOCK_HZ / (1e6f * (prescale + 1)));
   Wire.beginTransmission(PCA); Wire.write(uint8_t(6 + 4 * ch)); Wire.write(0); Wire.write(0);
   Wire.write(count & 0xFF); Wire.write((count >> 8) & 0x0F);
   Wire.endTransmission();
 }
 
+void servoWrite(int ch, float q) {
+  float us = tw::armcal_pulse(cal, ch, q);
+  if (!tw::armcal_pulse_ok(cal, ch, us)) { chanOff(ch); on[ch] = false; return; }   // never outside the safe ends
+  chanPulse(ch, us);
+}
+
 void updateOe() {
   bool any = false;
-  for (int i = 0; i < 6; i++) any |= on[i];
+  for (int i = 0; i < 6; i++) any |= on[i] || raw[i];
   digitalWrite(oePin, any ? LOW : HIGH);
 }
 
@@ -130,11 +136,20 @@ void stopAll() {   // STOP: wheels stop now and stay stopped until every stick i
   freezeArm();
 }
 
+void applyCal() {   // angle range of every joint = its calibrated safe ends
+  for (int i = 0; i < 6; i++) {
+    float a = (cal.min_us[i] - cal.zero_us[i]) / (cal.us_per_deg[i] * cal.sign[i]);
+    float b = (cal.max_us[i] - cal.zero_us[i]) / (cal.us_per_deg[i] * cal.sign[i]);
+    lo[i] = fminf(a, b); hi[i] = fmaxf(a, b);
+    goal[i] = cur[i] = tw::clampf(0, lo[i], hi[i]);
+  }
+}
+
 bool jointUsable(int i) { return calOk && ((cal.done_mask >> i) & 1) && lo[i] < hi[i]; }
 
 void setJoint(int i, bool want) {
   want = want && pcaOk && jointUsable(i);
-  if (want && !on[i]) { cur[i] = goal[i]; on[i] = true; servoWrite(i, cur[i]); }   // first pulse: jumps to the target
+  if (want && !on[i]) { raw[i] = false; cur[i] = goal[i]; on[i] = true; servoWrite(i, cur[i]); }   // first pulse: jumps to the target
   else if (!want && on[i]) { on[i] = false; chanOff(i); }
 }
 
@@ -299,6 +314,74 @@ void setupWeb() {
   server.begin();
 }
 
+// ----------------------------------------------------------------- serial: the browser calibrator (docs/calibrator) works with this firmware too
+char sline[96];
+size_t sused = 0;
+
+void allLimp() {
+  for (int i = 0; i < 6; i++) { on[i] = raw[i] = false; if (pcaOk) chanOff(i); }
+  updateOe();
+}
+
+void serialCommand() {
+  for (char *c = sline; *c; c++) *c = toupper(*c);
+  int a, b, d;
+  float z, sl, mn, mx;
+  if (!strcmp(sline, "HELLO")) {
+    Serial.printf("OK HELLO tw-armcal 1 sda=%d scl=%d oe=%d pca=%d chip=esp32s3 app=thenar_phone%s", sdaPin, sclPin, oePin, pcaOk ? 1 : 0, "\n");
+  } else if (sscanf(sline, "RATE %d", &a) == 1) {
+    rawRate = constrain(a, 20, 2000); Serial.printf("OK RATE %d%s", int(rawRate), "\n");
+  } else if (!strcmp(sline, "OFF")) {
+    allLimp(); Serial.println("OK OFF");
+  } else if (sscanf(sline, "P %d %d", &a, &b) == 2) {
+    if (!pcaOk) { Serial.println("ERR P no_pca9685"); return; }
+    if (a < 0 || a > 5) { Serial.println("ERR P channel"); return; }
+    float us = constrain(b, 500, 2500);
+    on[a] = false;                                     // the phone/gamepad let go of this joint
+    rawTgt[a] = us;
+    if (!raw[a]) { raw[a] = true; rawCur[a] = us; chanPulse(a, us); }   // first pulse: the servo jumps there
+    updateOe();
+    Serial.printf("OK P %d %d%s", a, int(us), "\n");
+  } else if (sscanf(sline, "REL %d", &a) == 1) {
+    if (a < 0 || a > 5) { Serial.println("ERR REL channel"); return; }
+    on[a] = raw[a] = false; if (pcaOk) chanOff(a); updateOe();
+    Serial.printf("OK REL %d%s", a, "\n");
+  } else if (!strcmp(sline, "STATE")) {
+    Serial.printf("OK STATE oe=%d", digitalRead(oePin) == LOW ? 1 : 0);
+    for (int i = 0; i < 6; i++) { if (raw[i]) Serial.printf(" %ld", lroundf(rawCur[i])); else Serial.print(" -"); }
+    Serial.println();
+  } else if (sscanf(sline, "CAL %d %f %f %d %f %f %d", &a, &z, &sl, &b, &mn, &mx, &d) == 7) {
+    if (a < 0 || a > 5) { Serial.println("ERR CAL channel"); return; }
+    tw::ArmCal t = cal;   // checked on a copy: invalid numbers are refused, the stored record always stays loadable
+    t.zero_us[a] = z; t.us_per_deg[a] = sl; t.sign[a] = b >= 0 ? 1 : -1; t.min_us[a] = mn; t.max_us[a] = mx;
+    if (!tw::armcal_joint_ok(t, a)) { Serial.printf("ERR CAL %d bad_values%s", a, "\n"); return; }
+    cal = t;
+    if (d) cal.done_mask |= 1 << a; else cal.done_mask &= ~(1 << a);
+    Serial.printf("OK CAL %d done=%d%s", a, d ? 1 : 0, "\n");
+  } else if (!strcmp(sline, "CALSAVE")) {
+    bool ok = tw::armcal_save(cal);
+    calOk = ok && tw::armcal_valid(cal);
+    allLimp(); applyCal();                             // new numbers: every joint starts limp again
+    Serial.printf(ok ? "OK CALSAVE mask=%02X%s" : "ERR CALSAVE nvs mask=%02X%s", cal.done_mask, "\n");
+  } else if (!strcmp(sline, "CALGET")) {
+    for (int i = 0; i < 6; i++)
+      Serial.printf("CAL %d %.1f %.5f %d %.1f %.1f %d%s", i, cal.zero_us[i], cal.us_per_deg[i], cal.sign[i], cal.min_us[i], cal.max_us[i],
+                    (cal.done_mask >> i) & 1, "\n");
+    Serial.printf("OK CALGET mask=%02X complete=%d%s", cal.done_mask, tw::armcal_complete(cal) ? 1 : 0, "\n");
+  } else {
+    Serial.println("ERR unknown (HELLO RATE OFF P REL STATE CAL CALSAVE CALGET)");
+  }
+}
+
+void serialPoll() {
+  while (Serial.available()) {
+    char ch = Serial.read();
+    if (ch == 13) continue;   // CR
+    if (ch == 10) { sline[sused] = 0; if (sused) serialCommand(); sused = 0; }   // LF ends a command
+    else if (sused < sizeof sline - 1) sline[sused++] = ch;
+  }
+}
+
 // ----------------------------------------------------------------- setup / loop
 void setup() {
   Serial.begin(115200);
@@ -314,13 +397,8 @@ void setup() {
 
   calOk = tw::armcal_load(cal);
   if (!calOk) tw::armcal_defaults(cal);
-  for (int i = 0; i < 6; i++) {   // angle range = the calibrated safe ends
-    float a = (cal.min_us[i] - cal.zero_us[i]) / (cal.us_per_deg[i] * cal.sign[i]);
-    float b = (cal.max_us[i] - cal.zero_us[i]) / (cal.us_per_deg[i] * cal.sign[i]);
-    lo[i] = fminf(a, b); hi[i] = fmaxf(a, b);
-    goal[i] = cur[i] = tw::clampf(0, lo[i], hi[i]);
-    on[i] = false;
-  }
+  for (int i = 0; i < 6; i++) { on[i] = raw[i] = false; rawCur[i] = rawTgt[i] = 1500; }
+  applyCal();
 
   Wire.begin(sdaPin, sclPin); Wire.setClock(100000); Wire.setTimeOut(20);
   prescale = uint8_t(lroundf(PCA_CLOCK_HZ / (4096.0f * 50)) - 1);
@@ -344,6 +422,7 @@ void setup() {
 
 void loop() {
   server.handleClient();
+  serialPoll();
 #if TW_PAD
   BP32.update();
 #endif
@@ -387,6 +466,12 @@ void loop() {
     if (!on[i] || cur[i] == goal[i]) continue;
     cur[i] += tw::clampf(goal[i] - cur[i], -step, step);
     servoWrite(i, cur[i]);
+  }
+  float rstep = rawRate * dt;
+  for (int i = 0; i < 6; i++) {
+    if (!raw[i] || rawCur[i] == rawTgt[i]) continue;
+    rawCur[i] += tw::clampf(rawTgt[i] - rawCur[i], -rstep, rstep);
+    chanPulse(i, rawCur[i]);
   }
   updateOe();
 #if TW_PAD
