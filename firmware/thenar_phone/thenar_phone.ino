@@ -1,39 +1,34 @@
-// Thenar Walker — phone + gamepad control (ESP32-S3 + PCA9685 arm + Cytron MDD10A wheels).
-// The robot is a Wi-Fi access point "<Team>_TF" (WPA2 password from team_config.h, one phone at a time) and serves
-// the control page at http://192.168.4.1 — joystick for the wheels, a slider per arm joint. Two gamepad routes:
-//   A) gamepad paired to the PHONE: the page reads it (browser Gamepad API) and sends the same commands over Wi-Fi.
-//      Works with any controller the phone accepts. Builds with the normal esp32:esp32 core.
-//   B) gamepad paired to the ROBOT: Bluepad32. Build with the esp32-bluepad32 core (FQBN esp32-bluepad32:esp32:esp32s3).
-//      The S3 radio is BLE only: Xbox Series / BLE-mode pads work, Bluetooth-Classic-only pads need route A.
-//      The first pad that connects is remembered (NVS "tw-pad"); any other pad is refused until "Forget gamepad".
-// Both routes use the same layout: left stick drive, right stick pan/shoulder, d-pad elbow/roll, Y/A wrist,
-// L2/R2 gripper open/close, L1/R1 speed, B stop, X precision arm, hold START 1 s = arm on, hold SELECT 1 s = arm limp.
-// Arm angles use the calibration saved by docs/calibrator ("Save to robot", NVS "tw-armcal"); a joint that was not
-// marked done there cannot be switched on, and every angle is clamped to that joint's calibrated safe ends.
-// Safety: every joint starts limp; switching a joint on makes it go to its target at once (support the arm).
-//         Phone silent 500 ms / gamepad disconnected -> its drive input drops to zero and the arm freezes where it is,
-//         PWM kept on so the gripper holds. STOP latches the wheels until every stick is back in the centre.
-//         The KCD4 kill switch still cuts all power.
+// Thenar Walker — phone control, low latency (ESP32-S3 + PCA9685 arm + Cytron MDD10A wheels).
+// The robot is a Wi-Fi access point "<Team>_TF" (WPA2 password from team_config.h, one phone at a time).
+// The phone opens http://192.168.4.1 ; the page then talks over ONE WebSocket (port 81) that stays open:
+// every touch is sent the moment it happens (no polling), Nagle is off, Wi-Fi power save is off, the loop runs at 100 Hz.
+//
+// Phone -> robot (one text frame each):  D thr turn  (-100..100, turn > 0 = left)   S speed(0..2)   X (STOP)
+//   A 1|0 (arm on/limp)   M mask   Q joint deg (target)   V joint deg_per_s (hold buttons, 0 = stop)   P n (ping)   G (config)
+// Robot -> phone:  C{json config}   T bat on speed latch q0..q5   P n (pong)
+//
+// Safety: the phone sends at least every 50 ms. Nothing for 300 ms -> wheels stop, hold buttons stop, the arm stays
+// where it is with PWM on (the gripper keeps its grip). STOP latches the wheels until the stick is centred.
+// Every joint starts limp; switching a joint on makes it go to its target at once. Angles are clamped to the
+// calibrated safe ends; joints not marked done in the calibrator can't be switched on. The KCD4 kill switch cuts power.
+// Calibration: the browser calibrator (docs/calibrator) works over USB with this same firmware (serial commands below).
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Wire.h>
 #include <Preferences.h>
+#include <SHA1Builder.h>
+#include <base64.h>
+#include <esp_wifi.h>
 #include <ThenarLink.h>
 #include <tw_armcal.h>
-#if __has_include(<Bluepad32.h>)
-#include <Bluepad32.h>
-#define TW_PAD 1
-#else
-#define TW_PAD 0
-#endif
 
 #ifdef TW_EXAMPLE_CREDENTIALS
 #warning "Example credentials in use: run  python firmware/tools/new_key.py \"Thenar Walker\"  first"
 #endif
 
 // ----------------------------------------------------------------- pins (ESP32-S3 board)
-int sdaPin = 8, sclPin = 9, oePin = 10;          // overridden by the calibrator's PINS command (NVS "tw-armpins")
+int sdaPin = 8, sclPin = 9, oePin = 10;          // overridden by the calibrator's PINS setting (NVS "tw-armpins")
 constexpr int PWM_PIN[2] = {4, 6};               // MDD10A PWM1 (left side), PWM2 (right side)
 constexpr int DIR_PIN[2] = {5, 7};               // MDD10A DIR1, DIR2
 constexpr int SIDE_SIGN[2] = {1, -1};            // right-side motors face the other way
@@ -42,23 +37,29 @@ constexpr float BATT_DIVIDER = (100.0f + 27.0f) / 27.0f;   // 100k / 27k divider
 constexpr int PWM_HZ = 20000, PWM_BITS = 10;
 constexpr uint8_t PCA = 0x40;
 constexpr float PCA_CLOCK_HZ = 25000000;         // same constant as the calibrator, so calibrated pulses match
-constexpr uint32_t PHONE_TIMEOUT_MS = 500;
-constexpr float ARM_DPS = 90;                    // arm slew limit per joint, deg/s
-constexpr float PAD_DPS = 60, PAD_FINE_DPS = 20; // gamepad arm speed at full stick (normal / precision)
-constexpr uint32_t HOLD_MS = 1000;               // START / SELECT hold time
 
-WebServer server(80);
+constexpr uint32_t LINK_TIMEOUT_MS = 300;
+constexpr uint32_t TICK_MS = 10;                 // 100 Hz control loop
+constexpr uint32_t TELE_MS = 100;                // status to the phone
+constexpr float ARM_DPS = 120;                   // slew limit toward a slider target
+constexpr float VEL_MAX = 90;                    // hold-button speed cap
+
+WebServer http(80);
+WiFiServer wsServer(81);
+WiFiClient ws;
+bool wsOpen = false;
+uint8_t rx[192];
+size_t rxLen = 0;
+
 tw::ArmCal cal;
-bool calOk = false, pcaOk = false, phone = false, stopLatch = false;
+bool calOk = false, pcaOk = false, linkUp = false, stopLatch = false;
 uint8_t prescale = 121;
 int speed = 1;                                   // 0 slow, 1 mid, 2 fast (tw::SPEED_SCALE)
-float lo[6], hi[6], goal[6], cur[6];
-bool on[6];
-bool raw[6];                                    // channel driven by the calibrator in plain microseconds
-float rawCur[6], rawTgt[6], rawRate = 300;      // us, us/s
-float wheelT[2] = {0, 0}, wheel[2] = {0, 0};
-float phoneThr = 0, phoneTrn = 0, padThr = 0, padTrn = 0;
-uint32_t lastCmd = 0, lastTick = 0;
+float lo[6], hi[6], goal[6], cur[6], vel[6];
+bool on[6], raw[6];                              // raw: driven by the calibrator in plain microseconds
+float rawCur[6], rawTgt[6], rawRate = 300;
+float thr = 0, trn = 0, wheelT[2] = {0, 0}, wheel[2] = {0, 0};
+uint32_t lastMsg = 0, lastTick = 0, lastTele = 0;
 char ssid[32];
 
 // ----------------------------------------------------------------- hardware
@@ -88,49 +89,33 @@ void updateOe() {
   digitalWrite(oePin, any ? LOW : HIGH);
 }
 
-void pwmSetup(int k) {
-#if ESP_ARDUINO_VERSION_MAJOR >= 3
-  ledcAttach(PWM_PIN[k], PWM_HZ, PWM_BITS);
-#else
-  ledcSetup(k, PWM_HZ, PWM_BITS); ledcAttachPin(PWM_PIN[k], k);   // Bluepad32 core is arduino-esp32 2.x
-#endif
-}
-
-void pwmWrite(int k, uint32_t duty) {
-#if ESP_ARDUINO_VERSION_MAJOR >= 3
-  ledcWrite(PWM_PIN[k], duty);
-#else
-  ledcWrite(k, duty);
-#endif
-}
-
 void motorWrite(int side, float v) {   // side 0 = left, 1 = right; v in -1..1
   v = tw::clampf(v * SIDE_SIGN[side], -1, 1);
   digitalWrite(DIR_PIN[side], v < 0 ? HIGH : LOW);
-  pwmWrite(side, lroundf(fabsf(v) * ((1 << PWM_BITS) - 1)));
+  ledcWrite(PWM_PIN[side], lroundf(fabsf(v) * ((1 << PWM_BITS) - 1)));
 }
 
 float batteryV() { return analogReadMilliVolts(BATT_PIN) * BATT_DIVIDER / 1000.0f; }
 
 // ----------------------------------------------------------------- control
-void setDrive(float thr, float trn) {   // same mixing as tw::Robot (turn > 0 = left)
-  thr = tw::clampf(thr, -1, 1); trn = tw::clampf(trn, -1, 1);
-  if (fabsf(thr) < tw::DRIVE_DEADBAND) thr = 0;
-  if (fabsf(trn) < tw::DRIVE_DEADBAND) trn = 0;
-  if (thr == 0 && trn != 0) {          // spin in place: breakaway floor + turn scale
-    float mag = tw::SPIN_MIN + (tw::TURN_SCALE[speed] - tw::SPIN_MIN) * fabsf(trn);
-    wheelT[0] = trn > 0 ? -mag : mag;
+void setDrive(float t, float r) {   // same mixing as tw::Robot (turn > 0 = left)
+  t = tw::clampf(t, -1, 1); r = tw::clampf(r, -1, 1);
+  if (fabsf(t) < tw::DRIVE_DEADBAND) t = 0;
+  if (fabsf(r) < tw::DRIVE_DEADBAND) r = 0;
+  if (t == 0 && r != 0) {          // spin in place: breakaway floor + turn scale
+    float mag = tw::SPIN_MIN + (tw::TURN_SCALE[speed] - tw::SPIN_MIN) * fabsf(r);
+    wheelT[0] = r > 0 ? -mag : mag;
     wheelT[1] = -wheelT[0];
   } else {
-    float l = thr * tw::SPEED_SCALE[speed] - trn * tw::TURN_SCALE[speed], r = thr * tw::SPEED_SCALE[speed] + trn * tw::TURN_SCALE[speed];
-    float m = fmaxf(1.0f, fmaxf(fabsf(l), fabsf(r)));
-    wheelT[0] = l / m; wheelT[1] = r / m;
+    float l = t * tw::SPEED_SCALE[speed] - r * tw::TURN_SCALE[speed], rr = t * tw::SPEED_SCALE[speed] + r * tw::TURN_SCALE[speed];
+    float m = fmaxf(1.0f, fmaxf(fabsf(l), fabsf(rr)));
+    wheelT[0] = l / m; wheelT[1] = rr / m;
   }
 }
 
-void freezeArm() { for (int i = 0; i < 6; i++) goal[i] = cur[i]; }
+void freezeArm() { for (int i = 0; i < 6; i++) { goal[i] = cur[i]; vel[i] = 0; } }
 
-void stopAll() {   // STOP: wheels stop now and stay stopped until every stick is centred; arm holds where it is
+void stopAll() {   // STOP: wheels stop now and stay stopped until the stick is centred; arm holds where it is
   wheelT[0] = wheelT[1] = wheel[0] = wheel[1] = 0;
   stopLatch = true;
   freezeArm();
@@ -142,20 +127,16 @@ void applyCal() {   // angle range of every joint = its calibrated safe ends
     float b = (cal.max_us[i] - cal.zero_us[i]) / (cal.us_per_deg[i] * cal.sign[i]);
     lo[i] = fminf(a, b); hi[i] = fmaxf(a, b);
     goal[i] = cur[i] = tw::clampf(0, lo[i], hi[i]);
+    vel[i] = 0;
   }
 }
 
 bool jointUsable(int i) { return calOk && ((cal.done_mask >> i) & 1) && lo[i] < hi[i]; }
 
-void setJoint(int i, bool want) {
-  want = want && pcaOk && jointUsable(i);
-  if (want && !on[i]) { raw[i] = false; cur[i] = goal[i]; on[i] = true; servoWrite(i, cur[i]); }   // first pulse: jumps to the target
-  else if (!want && on[i]) { on[i] = false; chanOff(i); }
-}
-
-void setMask(int m) {
-  for (int i = 0; i < 6; i++) setJoint(i, (m >> i) & 1);
-  updateOe();
+int usableMask() {
+  int m = 0;
+  for (int i = 0; i < 6; i++) m |= jointUsable(i) << i;
+  return m;
 }
 
 int onMask() {
@@ -164,210 +145,237 @@ int onMask() {
   return m;
 }
 
-int usableMask() {
-  int m = 0;
-  for (int i = 0; i < 6; i++) m |= jointUsable(i) << i;
-  return m;
+void setJoint(int i, bool want) {
+  want = want && pcaOk && jointUsable(i);
+  if (want && !on[i]) { raw[i] = false; vel[i] = 0; cur[i] = goal[i]; on[i] = true; servoWrite(i, cur[i]); }   // jumps to the target
+  else if (!want && on[i]) { on[i] = false; vel[i] = 0; chanOff(i); }
 }
 
-// ----------------------------------------------------------------- gamepad on the robot (route B, Bluepad32)
-#if TW_PAD
-ControllerPtr pad = nullptr;
-uint8_t padAddr[6];
-bool padKnown = false, padFine = false;
-uint16_t padPrevBtn = 0;
-uint32_t startDown = 0, selectDown = 0;
-
-void padSaveAddr() {
-  Preferences p; p.begin("tw-pad", false);
-  if (padKnown) p.putBytes("addr", padAddr, 6); else p.remove("addr");
-  p.end();
-}
-
-void rumble(ControllerPtr c, uint16_t ms) { c->playDualRumble(0, ms, 0x60, 0x60); }
-
-void onPadConnected(ControllerPtr c) {
-  ControllerProperties p = c->getProperties();
-  if (pad || (padKnown && memcmp(p.btaddr, padAddr, 6))) {   // one pad only, and only the remembered one
-    Serial.printf("gamepad %02X:%02X:%02X:%02X:%02X:%02X refused\n", p.btaddr[0], p.btaddr[1], p.btaddr[2], p.btaddr[3], p.btaddr[4], p.btaddr[5]);
-    c->disconnect();
-    return;
-  }
-  if (!padKnown) { memcpy(padAddr, p.btaddr, 6); padKnown = true; padSaveAddr(); }
-  pad = c; padPrevBtn = 0; startDown = selectDown = 0;
-  Serial.printf("gamepad connected: %s\n", c->getModelName().c_str());
-  rumble(c, 200);
-}
-
-void onPadDisconnected(ControllerPtr c) {
-  if (c != pad) return;
-  pad = nullptr; padThr = padTrn = 0; freezeArm();
-  Serial.println("gamepad lost -> its drive input zero, arm holds");
-}
-
-float stick(int v) {   // Bluepad32 axes are -512..511; 12 % dead zone
-  float f = tw::clampf(v / 511.0f, -1, 1);
-  return fabsf(f) < 0.12f ? 0 : (f - (f > 0 ? 0.12f : -0.12f)) / 0.88f;
-}
-
-void padTick(uint32_t now, float dt) {
-  if (!pad || !pad->isConnected() || !pad->isGamepad()) { padThr = padTrn = 0; return; }
-  uint16_t b = pad->buttons(), misc = pad->miscButtons();
-  uint8_t dp = pad->dpad();
-  uint16_t pressed = b & ~padPrevBtn;
-  padPrevBtn = b;
-  static const char *const NAMES[] = {"A", "B", "X", "Y", "L1", "R1", "L2", "R2", "L3", "R3"};
-  for (int i = 0; i < 10; i++)   // bring-up log: every button press shows on the serial monitor
-    if (pressed & (1 << i)) Serial.printf("pad %s\n", NAMES[i]);
-  static uint8_t prevDp = 0;
-  if (dp != prevDp) { Serial.printf("pad dpad %X  sticks L %d,%d  R %d,%d\n", dp, pad->axisX(), pad->axisY(), pad->axisRX(), pad->axisRY()); prevDp = dp; }
-  padThr = -stick(pad->axisY());               // stick up = forward
-  padTrn = -stick(pad->axisX());               // stick left = turn left
-  if (pressed & BUTTON_B) { stopAll(); rumble(pad, 120); }
-  if (pressed & BUTTON_SHOULDER_R) speed = speed < 2 ? speed + 1 : 2;
-  if (pressed & BUTTON_SHOULDER_L) speed = speed > 0 ? speed - 1 : 0;
-  if (pressed & BUTTON_X) padFine = !padFine;
-  // hold START 1 s: every calibrated joint on; hold SELECT 1 s: arm limp
-  bool st = misc & MISC_BUTTON_START, se = misc & MISC_BUTTON_SELECT;
-  static uint16_t prevMisc = 0;
-  if ((misc & ~prevMisc) & MISC_BUTTON_START) Serial.println("pad START (hold 1 s = arm on)");
-  if ((misc & ~prevMisc) & MISC_BUTTON_SELECT) Serial.println("pad SELECT (hold 1 s = arm limp)");
-  prevMisc = misc;
-  if (st && !startDown) startDown = now;
-  if (!st) startDown = 0;
-  if (st && startDown && uint32_t(now - startDown) >= HOLD_MS) { setMask(usableMask()); startDown = 0; rumble(pad, 300); Serial.printf("arm ON mask %02X\n", onMask()); }
-  if (se && !selectDown) selectDown = now;
-  if (!se) selectDown = 0;
-  if (se && selectDown && uint32_t(now - selectDown) >= HOLD_MS) { setMask(0); selectDown = 0; rumble(pad, 300); Serial.println("arm limp"); }
-  float v[6] = {
-      stick(pad->axisRX()),                                                  // pan: right = + (clockwise from above)
-      -stick(pad->axisRY()),                                                 // shoulder: up = + (lean forward)
-      float(((dp & DPAD_DOWN) ? 1 : 0) - ((dp & DPAD_UP) ? 1 : 0)),        // elbow: down = + (bend down)
-      float(((b & BUTTON_A) ? 1 : 0) - ((b & BUTTON_Y) ? 1 : 0)),          // wrist flex: A = + (down)
-      float(((dp & DPAD_RIGHT) ? 1 : 0) - ((dp & DPAD_LEFT) ? 1 : 0)),     // roll: right = + (clockwise)
-      (pad->brake() - pad->throttle()) / 1023.0f};                           // gripper: L2 opens, R2 closes
-  float k = (padFine ? PAD_FINE_DPS : PAD_DPS) * dt;
-  for (int i = 0; i < 6; i++)
-    if (on[i] && v[i] != 0) goal[i] = tw::clampf(goal[i] + v[i] * k, lo[i], hi[i]);
-}
-#endif
-
-// ----------------------------------------------------------------- web (route A and the touch controls)
-extern const char PAGE[];
-
-void addArr(String &s, const char *key, const float *a) {
-  s += ",\""; s += key; s += "\":[";
-  for (int i = 0; i < 6; i++) { if (i) s += ','; s += String(a[i], 1); }
-  s += "]";
-}
-
-void sendJson(bool full) {
-  String s = "{\"bat\":" + String(batteryV(), 2) + ",\"on\":" + String(onMask()) + ",\"sp\":" + String(speed);
-  addArr(s, "q", cur);
-  addArr(s, "g", goal);
-#if TW_PAD
-  s += ",\"pad\":\"" + (pad ? String(pad->getModelName().c_str()) : String("")) + "\",\"padmem\":" + String(padKnown ? 1 : 0);
-#endif
-  if (full) {
-    s += ",\"ssid\":\"" + String(ssid) + "\",\"cal\":" + String(calOk ? 1 : 0) + ",\"pca\":" + String(pcaOk ? 1 : 0) +
-         ",\"bt\":" + String(TW_PAD) + ",\"usable\":" + String(usableMask());
-    addArr(s, "lo", lo);
-    addArr(s, "hi", hi);
-  }
-  s += "}";
-  server.sendHeader("Cache-Control", "no-store");
-  server.sendHeader("Access-Control-Allow-Origin", "*");   // the Thenar Remote app (web build) reads this too
-  server.send(200, "application/json", s);
-}
-
-// /c?d=thr,turn [&s=speed] [&m=on_mask] [&q=q0,...,q5]   or   /c?stop=1      (thr, turn in -100..100, turn > 0 = left)
-// q and m are only sent when the phone changed them, so the robot's gamepad can move the arm at the same time.
-void handleCmd() {
-  lastCmd = millis();
-  phone = true;
-  if (server.hasArg("stop")) { stopAll(); sendJson(false); return; }   // keep the last stick: the latch needs it centred
-  int thr = 0, trn = 0;
-  if (sscanf(server.arg("d").c_str(), "%d,%d", &thr, &trn) == 2) { phoneThr = thr / 100.0f; phoneTrn = trn / 100.0f; }
-  else phoneThr = phoneTrn = 0;
-  if (server.hasArg("s")) speed = constrain(server.arg("s").toInt(), 0, 2);
-  float q[6];
-  if (server.hasArg("q") && sscanf(server.arg("q").c_str(), "%f,%f,%f,%f,%f,%f", &q[0], &q[1], &q[2], &q[3], &q[4], &q[5]) == 6)
-    for (int i = 0; i < 6; i++)
-      if (isfinite(q[i])) goal[i] = tw::clampf(q[i], lo[i], hi[i]);
-  if (server.hasArg("m")) setMask(server.arg("m").toInt());
-  sendJson(false);
-}
-
-void setupWeb() {
-  server.on("/", [] { server.send_P(200, "text/html", PAGE); });
-  server.on("/cfg", [] { sendJson(true); });
-  server.on("/c", handleCmd);
-#if TW_PAD
-  server.on("/forgetpad", [] {   // the next pad that connects becomes the remembered one
-    padKnown = false; padSaveAddr();
-    if (pad) pad->disconnect();
-    BP32.forgetBluetoothKeys();
-    sendJson(false);
-  });
-#endif
-  server.onNotFound([] { server.sendHeader("Location", "/"); server.send(302, "text/plain", ""); });
-  server.begin();
-}
-
-// ----------------------------------------------------------------- serial: the browser calibrator (docs/calibrator) works with this firmware too
-char sline[96];
-size_t sused = 0;
-
-void allLimp() {
-  for (int i = 0; i < 6; i++) { on[i] = raw[i] = false; if (pcaOk) chanOff(i); }
+void setMask(int m) {
+  for (int i = 0; i < 6; i++) setJoint(i, (m >> i) & 1);
   updateOe();
 }
+
+void allLimp() {
+  for (int i = 0; i < 6; i++) { on[i] = raw[i] = false; vel[i] = 0; if (pcaOk) chanOff(i); }
+  updateOe();
+}
+
+// ----------------------------------------------------------------- WebSocket (RFC 6455, one phone, small text frames)
+void wsClose() {
+  if (ws) ws.stop();
+  wsOpen = false;
+  rxLen = 0;
+}
+
+void wsSend(const char *s, size_t n) {
+  if (!wsOpen) return;
+  uint8_t buf[700];
+  size_t h = 2;
+  if (n + 4 > sizeof buf) return;
+  buf[0] = 0x81;                                   // FIN + text
+  if (n < 126) buf[1] = n;
+  else { buf[1] = 126; buf[2] = n >> 8; buf[3] = n & 0xFF; h = 4; }
+  memcpy(buf + h, s, n);
+  if (ws.write(buf, h + n) != h + n) wsClose();   // one write per frame -> one TCP segment, sent at once (no Nagle)
+}
+
+void sendCfg() {
+  char b[640];
+  int n = snprintf(b, sizeof b, "C{\"ssid\":\"%s\",\"cal\":%d,\"pca\":%d,\"usable\":%d,\"on\":%d,\"sp\":%d,\"lo\":[", ssid,
+                   calOk ? 1 : 0, pcaOk ? 1 : 0, usableMask(), onMask(), speed);
+  for (int i = 0; i < 6; i++) n += snprintf(b + n, sizeof b - n, "%s%.1f", i ? "," : "", lo[i]);
+  n += snprintf(b + n, sizeof b - n, "],\"hi\":[");
+  for (int i = 0; i < 6; i++) n += snprintf(b + n, sizeof b - n, "%s%.1f", i ? "," : "", hi[i]);
+  n += snprintf(b + n, sizeof b - n, "],\"g\":[");
+  for (int i = 0; i < 6; i++) n += snprintf(b + n, sizeof b - n, "%s%.1f", i ? "," : "", goal[i]);
+  n += snprintf(b + n, sizeof b - n, "]}");
+  wsSend(b, n);
+}
+
+void sendTele() {
+  char b[160];
+  int n = snprintf(b, sizeof b, "T %.2f %d %d %d", batteryV(), onMask(), speed, stopLatch ? 1 : 0);
+  for (int i = 0; i < 6; i++) n += snprintf(b + n, sizeof b - n, " %.1f", cur[i]);
+  wsSend(b, n);
+}
+
+// finds "name:" (case-insensitive) in an HTTP header block and copies its value
+bool headerValue(const char *req, const char *name, char *out, size_t cap) {
+  size_t nl = strlen(name);
+  for (const char *p = req; *p; p++) {
+    if ((p == req || p[-1] == '\n') && !strncasecmp(p, name, nl) && p[nl] == ':') {
+      p += nl + 1;
+      while (*p == ' ') p++;
+      size_t k = 0;
+      while (*p && *p != '\r' && *p != '\n' && k + 1 < cap) out[k++] = *p++;
+      out[k] = 0;
+      return k > 0;
+    }
+  }
+  return false;
+}
+
+void wsAccept() {
+  WiFiClient c = wsServer.accept();
+  if (!c) return;
+  char req[1024];
+  size_t n = 0;
+  uint32_t t0 = millis();
+  while (millis() - t0 < 400 && n < sizeof req - 1) {   // the upgrade request arrives in one go
+    int a = c.available();
+    if (a > 0) {
+      int r = c.read((uint8_t *)req + n, min((size_t)a, sizeof req - 1 - n));
+      if (r > 0) n += r;
+      req[n] = 0;
+      if (strstr(req, "\r\n\r\n")) break;
+    } else {
+      delay(1);
+    }
+  }
+  req[n] = 0;
+  char key[64];
+  if (!headerValue(req, "Sec-WebSocket-Key", key, sizeof key)) { c.stop(); return; }
+  String k = String(key) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+  SHA1Builder sha;
+  sha.begin();
+  sha.add((const uint8_t *)k.c_str(), k.length());
+  sha.calculate();
+  uint8_t digest[20];
+  sha.getBytes(digest);
+  String resp = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " +
+                base64::encode(digest, 20) + "\r\n\r\n";
+  if (wsOpen) wsClose();                           // the newest connection wins (the AP allows one phone anyway)
+  ws = c;
+  ws.setNoDelay(true);
+  ws.write((const uint8_t *)resp.c_str(), resp.length());
+  wsOpen = true;
+  rxLen = 0;
+  lastMsg = millis();
+  linkUp = true;
+  Serial.println("phone connected");
+  sendCfg();
+}
+
+void handleCmd(char *c) {
+  int i, v;
+  float f;
+  switch (c[0]) {
+    case 'D': {
+      int a = 0, b = 0;
+      if (sscanf(c + 1, "%d %d", &a, &b) == 2) { thr = a / 100.0f; trn = b / 100.0f; }
+      break;
+    }
+    case 'S': if (sscanf(c + 1, "%d", &v) == 1) speed = constrain(v, 0, 2); break;
+    case 'X': stopAll(); break;
+    case 'A': if (sscanf(c + 1, "%d", &v) == 1) setMask(v ? usableMask() : 0); break;
+    case 'M': if (sscanf(c + 1, "%d", &v) == 1) setMask(v); break;
+    case 'Q':
+      if (sscanf(c + 1, "%d %f", &i, &f) == 2 && i >= 0 && i < 6 && isfinite(f)) { goal[i] = tw::clampf(f, lo[i], hi[i]); vel[i] = 0; }
+      break;
+    case 'V':
+      if (sscanf(c + 1, "%d %f", &i, &f) == 2 && i >= 0 && i < 6 && isfinite(f)) vel[i] = tw::clampf(f, -VEL_MAX, VEL_MAX);
+      break;
+    case 'P': wsSend(c, strlen(c)); break;         // ping: echo straight back so the phone can show the round trip
+    case 'G': sendCfg(); break;
+  }
+}
+
+void wsPoll() {
+  if (!wsOpen) return;
+  if (!ws.connected()) { Serial.println("phone disconnected"); wsClose(); return; }
+  int a;
+  while ((a = ws.available()) > 0 && rxLen < sizeof rx) {
+    int r = ws.read(rx + rxLen, min((size_t)a, sizeof rx - rxLen));
+    if (r <= 0) break;
+    rxLen += r;
+  }
+  while (rxLen >= 2) {                             // every complete frame in the buffer
+    uint8_t op = rx[0] & 0x0F;
+    size_t len = rx[1] & 0x7F, h = 2;
+    if (!(rx[1] & 0x80) || len > 125) { wsClose(); return; }   // browsers always mask; our messages are short
+    if (rxLen < h + 4 + len) return;
+    uint8_t *mask = rx + h, *p = rx + h + 4;
+    for (size_t j = 0; j < len; j++) p[j] ^= mask[j & 3];
+    if (op == 1) {
+      char cmd[128];
+      memcpy(cmd, p, len);
+      cmd[len] = 0;
+      lastMsg = millis();
+      if (!linkUp) { linkUp = true; Serial.println("phone link back"); }
+      handleCmd(cmd);
+    } else if (op == 8) {
+      wsClose();
+      return;
+    } else if (op == 9) {                          // ping -> pong with the same payload
+      uint8_t pong[130] = {0x8A, (uint8_t)len};
+      memcpy(pong + 2, p, len);
+      ws.write(pong, len + 2);
+    }
+    size_t used = h + 4 + len;
+    memmove(rx, rx + used, rxLen - used);
+    rxLen -= used;
+  }
+}
+
+// ----------------------------------------------------------------- serial: the browser calibrator (docs/calibrator)
+char sline[96];
+size_t sused = 0;
 
 void serialCommand() {
   for (char *c = sline; *c; c++) *c = toupper(*c);
   int a, b, d;
   float z, sl, mn, mx;
   if (!strcmp(sline, "HELLO")) {
-    Serial.printf("OK HELLO tw-armcal 1 sda=%d scl=%d oe=%d pca=%d chip=esp32s3 app=thenar_phone%s", sdaPin, sclPin, oePin, pcaOk ? 1 : 0, "\n");
+    Serial.printf("OK HELLO tw-armcal 1 sda=%d scl=%d oe=%d pca=%d chip=esp32s3 app=thenar_phone\n", sdaPin, sclPin, oePin, pcaOk ? 1 : 0);
   } else if (sscanf(sline, "RATE %d", &a) == 1) {
-    rawRate = constrain(a, 20, 2000); Serial.printf("OK RATE %d%s", int(rawRate), "\n");
+    rawRate = constrain(a, 20, 2000);
+    Serial.printf("OK RATE %d\n", int(rawRate));
   } else if (!strcmp(sline, "OFF")) {
-    allLimp(); Serial.println("OK OFF");
+    allLimp();
+    Serial.println("OK OFF");
   } else if (sscanf(sline, "P %d %d", &a, &b) == 2) {
     if (!pcaOk) { Serial.println("ERR P no_pca9685"); return; }
     if (a < 0 || a > 5) { Serial.println("ERR P channel"); return; }
     float us = constrain(b, 500, 2500);
-    on[a] = false;                                     // the phone/gamepad let go of this joint
+    on[a] = false;                                 // the phone lets go of this joint
     rawTgt[a] = us;
     if (!raw[a]) { raw[a] = true; rawCur[a] = us; chanPulse(a, us); }   // first pulse: the servo jumps there
     updateOe();
-    Serial.printf("OK P %d %d%s", a, int(us), "\n");
+    Serial.printf("OK P %d %d\n", a, int(us));
   } else if (sscanf(sline, "REL %d", &a) == 1) {
     if (a < 0 || a > 5) { Serial.println("ERR REL channel"); return; }
-    on[a] = raw[a] = false; if (pcaOk) chanOff(a); updateOe();
-    Serial.printf("OK REL %d%s", a, "\n");
+    on[a] = raw[a] = false;
+    if (pcaOk) chanOff(a);
+    updateOe();
+    Serial.printf("OK REL %d\n", a);
   } else if (!strcmp(sline, "STATE")) {
     Serial.printf("OK STATE oe=%d", digitalRead(oePin) == LOW ? 1 : 0);
-    for (int i = 0; i < 6; i++) { if (raw[i]) Serial.printf(" %ld", lroundf(rawCur[i])); else Serial.print(" -"); }
+    for (int i = 0; i < 6; i++) {
+      if (raw[i]) Serial.printf(" %ld", lroundf(rawCur[i]));
+      else Serial.print(" -");
+    }
     Serial.println();
   } else if (sscanf(sline, "CAL %d %f %f %d %f %f %d", &a, &z, &sl, &b, &mn, &mx, &d) == 7) {
     if (a < 0 || a > 5) { Serial.println("ERR CAL channel"); return; }
     tw::ArmCal t = cal;   // checked on a copy: invalid numbers are refused, the stored record always stays loadable
     t.zero_us[a] = z; t.us_per_deg[a] = sl; t.sign[a] = b >= 0 ? 1 : -1; t.min_us[a] = mn; t.max_us[a] = mx;
-    if (!tw::armcal_joint_ok(t, a)) { Serial.printf("ERR CAL %d bad_values%s", a, "\n"); return; }
+    if (!tw::armcal_joint_ok(t, a)) { Serial.printf("ERR CAL %d bad_values\n", a); return; }
     cal = t;
-    if (d) cal.done_mask |= 1 << a; else cal.done_mask &= ~(1 << a);
-    Serial.printf("OK CAL %d done=%d%s", a, d ? 1 : 0, "\n");
+    if (d) cal.done_mask |= 1 << a;
+    else cal.done_mask &= ~(1 << a);
+    Serial.printf("OK CAL %d done=%d\n", a, d ? 1 : 0);
   } else if (!strcmp(sline, "CALSAVE")) {
     bool ok = tw::armcal_save(cal);
     calOk = ok && tw::armcal_valid(cal);
-    allLimp(); applyCal();                             // new numbers: every joint starts limp again
-    Serial.printf(ok ? "OK CALSAVE mask=%02X%s" : "ERR CALSAVE nvs mask=%02X%s", cal.done_mask, "\n");
+    allLimp();
+    applyCal();                                    // new numbers: every joint starts limp again
+    Serial.printf(ok ? "OK CALSAVE mask=%02X\n" : "ERR CALSAVE nvs mask=%02X\n", cal.done_mask);
   } else if (!strcmp(sline, "CALGET")) {
     for (int i = 0; i < 6; i++)
-      Serial.printf("CAL %d %.1f %.5f %d %.1f %.1f %d%s", i, cal.zero_us[i], cal.us_per_deg[i], cal.sign[i], cal.min_us[i], cal.max_us[i],
-                    (cal.done_mask >> i) & 1, "\n");
-    Serial.printf("OK CALGET mask=%02X complete=%d%s", cal.done_mask, tw::armcal_complete(cal) ? 1 : 0, "\n");
+      Serial.printf("CAL %d %.1f %.5f %d %.1f %.1f %d\n", i, cal.zero_us[i], cal.us_per_deg[i], cal.sign[i], cal.min_us[i], cal.max_us[i],
+                    (cal.done_mask >> i) & 1);
+    Serial.printf("OK CALGET mask=%02X complete=%d\n", cal.done_mask, tw::armcal_complete(cal) ? 1 : 0);
   } else {
     Serial.println("ERR unknown (HELLO RATE OFF P REL STATE CAL CALSAVE CALGET)");
   }
@@ -376,13 +384,20 @@ void serialCommand() {
 void serialPoll() {
   while (Serial.available()) {
     char ch = Serial.read();
-    if (ch == 13) continue;   // CR
-    if (ch == 10) { sline[sused] = 0; if (sused) serialCommand(); sused = 0; }   // LF ends a command
-    else if (sused < sizeof sline - 1) sline[sused++] = ch;
+    if (ch == 13) continue;                        // CR
+    if (ch == 10) {                                // LF ends a command
+      sline[sused] = 0;
+      if (sused) serialCommand();
+      sused = 0;
+    } else if (sused < sizeof sline - 1) {
+      sline[sused++] = ch;
+    }
   }
 }
 
 // ----------------------------------------------------------------- setup / loop
+extern const char PAGE[];
+
 void setup() {
   Serial.begin(115200);
   Preferences p;
@@ -391,7 +406,7 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   for (int k = 0; k < 2; k++) {
     pinMode(DIR_PIN[k], OUTPUT); digitalWrite(DIR_PIN[k], LOW);
-    pwmSetup(k); pwmWrite(k, 0);
+    ledcAttach(PWM_PIN[k], PWM_HZ, PWM_BITS); ledcWrite(PWM_PIN[k], 0);
   }
   analogSetPinAttenuation(BATT_PIN, ADC_11db);
 
@@ -400,7 +415,7 @@ void setup() {
   for (int i = 0; i < 6; i++) { on[i] = raw[i] = false; rawCur[i] = rawTgt[i] = 1500; }
   applyCal();
 
-  Wire.begin(sdaPin, sclPin); Wire.setClock(100000); Wire.setTimeOut(20);
+  Wire.begin(sdaPin, sclPin); Wire.setClock(400000); Wire.setTimeOut(20);
   prescale = uint8_t(lroundf(PCA_CLOCK_HZ / (4096.0f * 50)) - 1);
   pcaOk = reg(0, 0x10) && reg(0xFE, prescale) && reg(1, 4) && reg(0, 0x20);
   delay(2);
@@ -409,61 +424,53 @@ void setup() {
   tw::device_name(team::TEAM_NAME, ssid, sizeof ssid);
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid, team::WIFI_PASSWORD, 6, 0, 1);    // channel 6, visible, one phone
-  setupWeb();
-#if TW_PAD
-  if (p.begin("tw-pad", true)) { padKnown = p.getBytes("addr", padAddr, 6) == 6; p.end(); }
-  BP32.setup(&onPadConnected, &onPadDisconnected);
-  BP32.enableVirtualDevice(false);                    // no mouse/touchpad devices, gamepads only
-#endif
-  Serial.printf("THENAR REMOTE  AP %s  http://%s  PCA9685 %s  arm calibration %s (done mask %02X)  robot gamepad %s\n", ssid,
-                WiFi.softAPIP().toString().c_str(), pcaOk ? "ok" : "MISSING", calOk ? "ok" : "MISSING", calOk ? cal.done_mask : 0,
-                TW_PAD ? "ON (BLE)" : "off (normal core build)");
+  WiFi.setSleep(false);
+  esp_wifi_set_ps(WIFI_PS_NONE);                      // radio always on: no 100 ms power-save wake-ups
+  http.on("/", [] { http.send_P(200, "text/html", PAGE); });
+  http.onNotFound([] { http.sendHeader("Location", "/"); http.send(302, "text/plain", ""); });
+  http.begin();
+  wsServer.begin();
+  wsServer.setNoDelay(true);
+  Serial.printf("THENAR PHONE  AP %s  http://%s  PCA9685 %s  arm calibration %s (done mask %02X)\n", ssid,
+                WiFi.softAPIP().toString().c_str(), pcaOk ? "ok" : "MISSING", calOk ? "ok" : "MISSING", calOk ? cal.done_mask : 0);
 }
 
 void loop() {
-  server.handleClient();
+  http.handleClient();
+  wsAccept();
+  wsPoll();
   serialPoll();
-#if TW_PAD
-  BP32.update();
-#endif
   uint32_t now = millis();
-  if (uint32_t(now - lastTick) < 20) { delay(1); return; }   // 50 Hz; delay lets the radio tasks run
+  if (uint32_t(now - lastTick) < TICK_MS) return;
   float dt = (now - lastTick) / 1000.0f;
   if (dt > 0.1f) dt = 0.1f;
   lastTick = now;
-  if (phone && uint32_t(now - lastCmd) > PHONE_TIMEOUT_MS) {
-    phone = false; phoneThr = phoneTrn = 0;
-#if TW_PAD
-    if (!pad) freezeArm();                   // a connected robot gamepad keeps control of the arm
-#else
-    freezeArm();
-#endif
-    Serial.println("phone lost -> its drive input zero, arm holds");
-  }
-#if TW_PAD
-  padTick(now, dt);
-#endif
 
-  // the gamepad stick wins while it is pushed, otherwise the phone; STOP holds until both are centred
-  float thr = phoneThr, trn = phoneTrn;
-  if (padThr != 0 || padTrn != 0) { thr = padThr; trn = padTrn; }
+  if (linkUp && uint32_t(now - lastMsg) > LINK_TIMEOUT_MS) {   // phone silent: stop wheels, hold the arm
+    linkUp = false;
+    thr = trn = 0;
+    freezeArm();
+    Serial.println("phone silent -> wheels stopped, arm holding");
+  }
+
   bool centred = fabsf(thr) < tw::DRIVE_DEADBAND && fabsf(trn) < tw::DRIVE_DEADBAND;
   if (stopLatch && centred) stopLatch = false;
-  if (stopLatch) thr = trn = 0;
-  setDrive(thr, trn);
-
+  setDrive(stopLatch ? 0 : thr, stopLatch ? 0 : trn);
   float a = tw::DRIVE_ACCEL_PER_S * dt;
   for (int k = 0; k < 2; k++) {
     float t = wheelT[k], w = wheel[k];
-    if (t * w < 0) w = 0;                    // reversing: stop first
-    else if (fabsf(t) <= fabsf(w)) w = t;    // slowing / stopping: immediate
-    else w += tw::clampf(t - w, -a, a);      // speeding up: ramped
+    if (t * w < 0) w = 0;                          // reversing: stop first
+    else if (fabsf(t) <= fabsf(w)) w = t;          // slowing / stopping: immediate
+    else w += tw::clampf(t - w, -a, a);            // speeding up: ramped
     wheel[k] = w;
     motorWrite(k, w);
   }
+
   float step = ARM_DPS * dt;
   for (int i = 0; i < 6; i++) {
-    if (!on[i] || cur[i] == goal[i]) continue;
+    if (!on[i]) continue;
+    if (vel[i] != 0) goal[i] = tw::clampf(goal[i] + vel[i] * dt, lo[i], hi[i]);
+    if (cur[i] == goal[i]) continue;
     cur[i] += tw::clampf(goal[i] - cur[i], -step, step);
     servoWrite(i, cur[i]);
   }
@@ -474,182 +481,146 @@ void loop() {
     chanPulse(i, rawCur[i]);
   }
   updateOe();
-#if TW_PAD
-  bool linked = phone || pad;
-#else
-  bool linked = phone;
-#endif
-  digitalWrite(LED_PIN, linked ? HIGH : ((now / 250) & 1));
+  digitalWrite(LED_PIN, linkUp ? HIGH : ((now / 250) & 1));
+  if (wsOpen && uint32_t(now - lastTele) >= TELE_MS) { lastTele = now; sendTele(); }
 }
 
 // ----------------------------------------------------------------- the phone page
 const char PAGE[] PROGMEM = R"HTML(<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0e1318">
 <title>Thenar Walker</title>
 <style>
-:root{--bg:#0f141a;--card:#18202a;--line:#2a3542;--fg:#e8edf2;--dim:#93a3b5;--acc:#f08a3c;--ok:#3ccf7a;--bad:#ff5a5a}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px system-ui,-apple-system,Segoe UI,sans-serif;user-select:none;-webkit-user-select:none}
-header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#0b0f14ee;border-bottom:1px solid var(--line)}
-header b{font-size:17px;letter-spacing:.5px;flex:1}
-.pill{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--card);color:var(--dim);white-space:nowrap}
-.pill.ok{color:#08130c;background:var(--ok)}.pill.bad{color:#fff;background:var(--bad)}
-#stop{width:100%;padding:16px;font-size:20px;font-weight:800;border:0;border-radius:12px;background:var(--bad);color:#fff}
-main{padding:12px 14px 40px;display:flex;flex-direction:column;gap:12px;max-width:640px;margin:auto}
-section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
-h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)}
-#pad{position:relative;width:min(78vw,260px);aspect-ratio:1;margin:6px auto;border-radius:50%;background:radial-gradient(#202a36,#141b23);border:2px solid var(--line);touch-action:none}
-#knob{position:absolute;left:50%;top:50%;width:34%;aspect-ratio:1;margin:-17% 0 0 -17%;border-radius:50%;background:var(--acc);box-shadow:0 4px 16px #0008;pointer-events:none}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-button{font:inherit;color:var(--fg);background:#232d39;border:1px solid var(--line);border-radius:9px;padding:9px 12px;min-width:44px}
-button:active{filter:brightness(1.4)}
-button.sel{background:var(--acc);color:#1a0d02;border-color:var(--acc);font-weight:700}
+:root{--bg:#0e1318;--card:#161d25;--card2:#1d2630;--line:#2b3744;--fg:#e9eef3;--dim:#8f9eae;--acc:#f2913d;--ok:#45d184;--bad:#ff5b52;--warn:#ffc15e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) max(10px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(10px,env(safe-area-inset-left))}
+.bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 0}
+.bar b{font-size:15px;letter-spacing:.06em;margin-right:auto}
+.pill{font:600 12px ui-monospace,Consolas,monospace;padding:4px 9px;border-radius:99px;background:var(--card2);color:var(--dim);white-space:nowrap}
+.pill.ok{background:var(--ok);color:#06140c}.pill.bad{background:var(--bad);color:#fff}.pill.warn{background:var(--warn);color:#1d1300}
+button{font:600 14px system-ui,sans-serif;color:var(--fg);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;touch-action:manipulation}
+button:active,button.held{background:var(--acc);color:#1b0d01;border-color:var(--acc)}
+button.sel{background:var(--acc);color:#1b0d01;border-color:var(--acc)}
 button:disabled{opacity:.35}
-.seg{display:flex;flex:1}.seg button{flex:1;border-radius:0}.seg button:first-child{border-radius:9px 0 0 9px}.seg button:last-child{border-radius:0 9px 9px 0}
-.j{border-top:1px solid var(--line);padding:10px 0 4px}
-.j:first-of-type{border-top:0}
-.jh{display:flex;align-items:center;gap:8px}
-.jh .n{flex:1}.jh .n small{color:var(--dim)}
-.jh .v{font:600 18px ui-monospace,Consolas,monospace;min-width:70px;text-align:right}
-.tog{min-width:62px}.tog.on{background:var(--ok);color:#08130c;border-color:var(--ok);font-weight:700}
-input[type=range]{width:100%;height:34px;accent-color:var(--acc);margin:6px 0}
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.note{color:var(--dim);font-size:12.5px;line-height:1.45;margin:8px 0 0}
-.warn{color:#ffb36b}
-table{width:100%;border-collapse:collapse;font-size:13px}td{padding:4px 2px;border-top:1px solid var(--line)}td:first-child{color:var(--acc);font-weight:600;white-space:nowrap;padding-right:10px}
+#stop{background:var(--bad);border-color:var(--bad);color:#fff;font-size:16px;padding:10px 18px;letter-spacing:.06em}
+.main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:10px;min-height:0;padding-bottom:8px}
+@media (orientation:portrait){.main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.card h2{margin:0;font-size:11px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.card h2 span{margin-left:auto}
+#padWrap{flex:1;display:grid;place-items:center;min-height:220px}
+#pad{position:relative;width:min(100%,62vh,330px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#1d2732 0 30%,#141b22 70%);border:2px solid var(--line);touch-action:none}
+#pad::before,#pad::after{content:"";position:absolute;background:var(--line);left:50%;top:8%;bottom:8%;width:1px}
+#pad::after{top:50%;left:8%;right:8%;height:1px;width:auto;bottom:auto}
+#knob{position:absolute;left:50%;top:50%;width:34%;aspect-ratio:1;margin:-17% 0 0 -17%;border-radius:50%;background:var(--acc);box-shadow:0 6px 18px #0009;pointer-events:none;will-change:transform}
+.seg{display:flex;gap:4px}.seg button{flex:1;padding:8px 4px}
+.joints{display:flex;flex-direction:column;gap:6px;overflow-y:auto;min-height:0}
+.j{display:grid;grid-template-columns:76px 52px minmax(0,1fr) 52px 56px;gap:6px;align-items:center}
+.j .n{font-weight:700;font-size:13px;line-height:1.15}.j .n small{display:block;font-weight:400;color:var(--dim);font-size:11px}
+.j .h{padding:10px 0;font-size:18px;touch-action:none}
+.j .v{grid-column:3;text-align:center;font:600 15px ui-monospace,Consolas,monospace}
+.j input{grid-column:3;width:100%;margin:0;accent-color:var(--acc);height:28px;touch-action:none}
+.j .slot{display:grid;grid-template-rows:auto auto}
+.j .t{padding:9px 0}.j .t.on{background:var(--ok);color:#06140c;border-color:var(--ok)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.note{color:var(--dim);font-size:12px}
+.warn{color:var(--warn)}
 </style></head><body>
-<header><b>THENAR WALKER</b><span id="gp" class="pill">no pad</span><span id="link" class="pill">connecting</span><span id="bat" class="pill">-- V</span></header>
-<main>
-<button id="stop">STOP</button>
-<section><h2>Drive</h2>
-<div id="pad"><div id="knob"></div></div>
-<div class="row"><span style="color:var(--dim)">Speed</span><div class="seg" id="speed"><button data-s="0">Slow</button><button data-s="1" class="sel">Mid</button><button data-s="2">Fast</button></div></div>
-<p class="note">Drag the orange knob. Let go = wheels stop. Losing Wi-Fi for 0.5 s also stops the wheels.</p>
-</section>
-<section><h2>Arm</h2>
-<div class="row" style="margin-bottom:6px"><button id="zero">All to 0°</button><button id="allon">All joints ON</button><button id="limp">Limp all</button></div>
-<div class="row" style="margin-bottom:6px"><span style="color:var(--dim)">Gripper</span><button id="gopen">Open</button><button id="gclose">Close</button></div>
-<div id="joints"></div>
-<p class="note warn" id="calnote"></p>
-<p class="note">A joint is limp until you switch it ON — then it goes straight to its slider angle, so hold the arm near there first. Sliders stop at the safe ends you set in the calibrator.</p>
-</section>
-<section><h2>Gamepad</h2>
-<p class="note" id="gpnote" style="margin-top:0"></p>
-<table>
-<tr><td>Left stick</td><td>drive (up = forward, sideways = turn)</td></tr>
-<tr><td>Right stick</td><td>J1 base pan (left/right), J2 shoulder (up/down)</td></tr>
-<tr><td>D-pad ↑ ↓</td><td>J3 elbow</td></tr>
-<tr><td>D-pad ← →</td><td>J5 wrist roll</td></tr>
-<tr><td>Y / A</td><td>J4 wrist flex up / down</td></tr>
-<tr><td>L2 / R2</td><td>J6 gripper open / close</td></tr>
-<tr><td>L1 / R1</td><td>speed down / up</td></tr>
-<tr><td>B</td><td>STOP</td></tr>
-<tr><td>X</td><td>precision arm (slow) on/off</td></tr>
-<tr><td>hold START 1 s</td><td>arm ON (all calibrated joints — support the arm)</td></tr>
-<tr><td>hold SELECT 1 s</td><td>arm limp</td></tr>
-</table>
-<div class="row" style="margin-top:10px" id="btrow" hidden><button id="forget">Forget robot gamepad</button></div>
-</section>
-</main>
+<div class="bar">
+  <b>THENAR</b>
+  <span id="link" class="pill bad">connecting</span>
+  <span id="rtt" class="pill">-- ms</span>
+  <span id="bat" class="pill">-- V</span>
+  <button id="fs">Full screen</button>
+  <button id="stop">STOP</button>
+</div>
+<div class="main">
+  <div class="card">
+    <h2>Drive <span id="latch" class="pill warn" hidden>STOPPED — centre the stick</span></h2>
+    <div id="padWrap"><div id="pad"><div id="knob"></div></div></div>
+    <div class="seg" id="speed"><button data-s="0">Slow</button><button data-s="1" class="sel">Mid</button><button data-s="2">Fast</button></div>
+  </div>
+  <div class="card">
+    <h2>Arm <span class="row"><button id="armOn">Arm ON</button><button id="limp">Limp</button><button id="fine">Fine</button></span></h2>
+    <div class="joints" id="joints"></div>
+    <div class="note" id="calnote"></div>
+  </div>
+</div>
 <script>
-const NAMES=[["J1","Base pan"],["J2","Shoulder lift"],["J3","Elbow"],["J4","Wrist flex"],["J5","Wrist roll"],["J6","Gripper"]];
-const PAD_DPS=60,PAD_FINE_DPS=20,HOLD_MS=1000;
-let cfg=null,q=[0,0,0,0,0,0],mask=0,sp=1,jx=0,jy=0,stopReq=false,busy=false,fails=0;
-let qEdit=0,mEdit=0,sEdit=0,qSent=0,mSent=0,sSent=0,touching=-1;
+const NAMES=[["J1","Base pan"],["J2","Shoulder"],["J3","Elbow"],["J4","Wrist flex"],["J5","Wrist roll"],["J6","Gripper"]];
 const $=id=>document.getElementById(id);
-function clamp(v,a,b){return Math.min(b,Math.max(a,v))}
-function editQ(){qEdit++;show()}
-function build(){
-  const box=$("joints");box.innerHTML="";
-  NAMES.forEach(([j,n],i)=>{
-    const ok=(cfg.usable>>i)&1,d=document.createElement("div");d.className="j";
-    d.innerHTML=`<div class="jh"><span class="n"><b>${j}</b> ${n}<br><small>${ok?cfg.lo[i].toFixed(0)+"° … "+cfg.hi[i].toFixed(0)+"°":"not calibrated"}</small></span>
-<span class="v" id="v${i}">--</span><button class="tog" id="t${i}" ${ok?"":"disabled"}>OFF</button></div>
-<input type="range" id="r${i}" min="${cfg.lo[i]}" max="${cfg.hi[i]}" step="0.5" value="${q[i]}" ${ok?"":"disabled"}>
-<div class="steps">${[-5,-1,1,5].map(s=>`<button data-j="${i}" data-s="${s}" ${ok?"":"disabled"}>${s>0?"+":""}${s}°</button>`).join("")}</div>`;
-    box.appendChild(d);
-    const r=$("r"+i);
-    r.oninput=e=>{q[i]=+e.target.value;editQ()};
-    r.onpointerdown=()=>touching=i;r.onpointerup=r.onpointercancel=()=>touching=-1;
-    $("t"+i).onclick=()=>{mask^=1<<i;mEdit++;show()};
-  });
-  box.querySelectorAll(".steps button").forEach(b=>b.onclick=()=>{const i=+b.dataset.j;q[i]=clamp(q[i]+ +b.dataset.s,cfg.lo[i],cfg.hi[i]);editQ()});
-  $("calnote").textContent=!cfg.pca?"PCA9685 not found — check SDA/SCL wiring and servo board power.":
-    !cfg.cal?"No arm calibration on the robot: open the calibrator on the laptop and press Save to robot, then reboot.":
-    (cfg.usable!=63?"Joints marked not calibrated stay off — finish them in the calibrator and Save to robot.":"");
-  $("btrow").hidden=!cfg.bt;
+let ws=null,open=false,cfg=null,mask=0,sp=1,fine=false,thr=0,trn=0,lastD="",dirty=false,drag=-1,pingT=0;
+const q=[0,0,0,0,0,0],qSend=[null,null,null,null,null,null];
+function send(s){if(open&&ws.readyState===1)ws.send(s)}
+function connect(){
+  ws=new WebSocket("ws://"+(location.hostname||"192.168.4.1")+":81/");
+  ws.onopen=()=>{open=true;$("link").textContent="linked";$("link").className="pill ok";send("G");sendDrive(true)};
+  ws.onclose=()=>{open=false;$("link").textContent="NO LINK";$("link").className="pill bad";$("rtt").textContent="-- ms";setTimeout(connect,300)};
+  ws.onerror=()=>{try{ws.close()}catch(e){}};
+  ws.onmessage=e=>onMsg(e.data);
 }
-function show(){
-  for(let i=0;i<6;i++){const r=$("r"+i);if(!r)continue;if(touching!==i)r.value=q[i];
-    $("v"+i).textContent=q[i].toFixed(1)+"°";const t=$("t"+i),on=(mask>>i)&1;t.textContent=on?"ON":"OFF";t.classList.toggle("on",!!on)}
-  document.querySelectorAll("#speed button").forEach(x=>x.classList.toggle("sel",+x.dataset.s===sp));
+function onMsg(m){
+  const k=m[0];
+  if(k==="T"){const a=m.split(" ");const bat=+a[1];mask=+a[2];sp=+a[3];$("latch").hidden=a[4]!=="1";
+    $("bat").textContent=bat>1?bat.toFixed(1)+" V":"-- V";for(let i=0;i<6;i++){q[i]=+a[5+i];}showJoints();showSpeed();}
+  else if(k==="P"){const t=+m.slice(2);const r=performance.now()-t;$("rtt").textContent=r.toFixed(0)+" ms";$("rtt").className="pill"+(r<30?" ok":r<80?" warn":" bad")}
+  else if(k==="C"){cfg=JSON.parse(m.slice(1));mask=cfg.on;sp=cfg.sp;for(let i=0;i<6;i++)q[i]=cfg.g[i];build();showSpeed()}
 }
-// ---- gamepad paired to the phone (browser Gamepad API, needs a secure context)
-let gpFine=false,gpPrev=[],gpHold={9:0,8:0},gpLast=performance.now(),gpThr=0,gpTrn=0,gpName="";
-function dz(v){return Math.abs(v)<0.12?0:(v-Math.sign(v)*0.12)/0.88}
-function readGamepad(){
-  const now=performance.now(),dt=Math.min(0.2,(now-gpLast)/1000);gpLast=now;gpThr=gpTrn=0;
-  const g=[...(navigator.getGamepads?navigator.getGamepads():[])].find(p=>p&&p.connected);
-  gpName=g?g.id:"";if(!g||!cfg)return;
-  const B=i=>g.buttons[i]?g.buttons[i].value:0,P=i=>B(i)>0.5,edge=i=>P(i)&&!gpPrev[i];
-  gpThr=-dz(g.axes[1]||0);gpTrn=-dz(g.axes[0]||0);
-  if(edge(1)){stopReq=true;setKnob(0,0)}
-  if(edge(5)&&sp<2){sp++;sEdit++}
-  if(edge(4)&&sp>0){sp--;sEdit++}
-  if(edge(2))gpFine=!gpFine;
-  for(const b of[9,8]){if(P(b)){if(!gpHold[b])gpHold[b]=now;else if(now-gpHold[b]>=HOLD_MS){mask=b===9?cfg.usable:0;mEdit++;gpHold[b]=Infinity}}else gpHold[b]=0}
-  const v=[dz(g.axes[2]||0),-dz(g.axes[3]||0),B(13)-B(12),B(0)-B(3),B(15)-B(14),B(6)-B(7)];
-  const k=(gpFine?PAD_FINE_DPS:PAD_DPS)*dt;let moved=false;
-  for(let i=0;i<6;i++)if(((mask>>i)&1)&&v[i]){q[i]=clamp(q[i]+v[i]*k,cfg.lo[i],cfg.hi[i]);moved=true}
-  if(moved)editQ();
-  gpPrev=g.buttons.map(b=>b.pressed);
-}
-async function tick(){
-  readGamepad();
-  if(busy||!cfg)return;busy=true;
-  let thr=jy,trn=-jx;if(gpThr||gpTrn){thr=gpThr;trn=gpTrn}
-  let url;const sq=qEdit,sm=mEdit,ss=sEdit;
-  if(stopReq){url="/c?stop=1";stopReq=false}
-  else{url=`/c?d=${Math.round(thr*100)},${Math.round(trn*100)}`;
-    if(ss!==sSent)url+=`&s=${sp}`;if(sm!==mSent)url+=`&m=${mask}`;if(sq!==qSent)url+=`&q=${q.map(v=>v.toFixed(1)).join(",")}`}
-  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),450);
-  try{const r=await(await fetch(url,{signal:ac.signal,cache:"no-store"})).json();fails=0;qSent=sq;mSent=sm;sSent=ss;
-    $("link").textContent="connected";$("link").className="pill ok";
-    $("bat").textContent=r.bat>1?r.bat.toFixed(1)+" V":"-- V";
-    // the robot is the truth (its gamepad may be moving things too) unless the phone changed something meanwhile
-    if(qEdit===sq&&touching<0)q=r.g.slice();
-    if(mEdit===sm)mask=r.on;
-    if(sEdit===ss)sp=r.sp;
-    const rp=r.pad||"",pp=gpName?"phone: "+gpName.split("(")[0].trim().slice(0,18):"";
-    $("gp").textContent=rp?"robot pad":(pp?"phone pad":"no pad");$("gp").className="pill"+(rp||pp?" ok":"");
-    $("gpnote").textContent=(rp?"Gamepad on the robot: "+rp+". ":"")+(pp?"Gamepad on this phone: "+gpName+". ":"")+
-      (!rp&&!pp?(window.isSecureContext?"Pair a controller with this phone (Bluetooth) and press any button"+(cfg.bt?", or pair it straight to the robot (BLE pads).":"."):
-       "To use a controller paired to this phone, Chrome needs chrome://flags → “Insecure origins treated as secure” → http://192.168.4.1 → Relaunch."+(cfg.bt?" Or pair a BLE pad straight to the robot.":"")):"");
-    show();
-  }catch(e){if(++fails>2){$("link").textContent="NO LINK";$("link").className="pill bad"}}
-  clearTimeout(to);busy=false;
-}
-async function load(){
-  try{cfg=await(await fetch("/cfg",{cache:"no-store"})).json();q=cfg.g.slice();mask=cfg.on;sp=cfg.sp;build();show()}
-  catch(e){setTimeout(load,1000)}
-}
-// touch joystick
+// ---- drive: sent the moment the stick moves (once per frame at most), plus a 40 ms heartbeat
+function sendDrive(force){const d="D "+Math.round(thr*100)+" "+Math.round(trn*100);if(force||d!==lastD){send(d);lastD=d}}
+function frame(){if(dirty){dirty=false;sendDrive(false)}
+  for(let i=0;i<6;i++)if(qSend[i]!==null){send("Q "+i+" "+qSend[i].toFixed(1));qSend[i]=null}
+  requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+setInterval(()=>{if(!document.hidden)sendDrive(true)},40);
+setInterval(()=>{if(!document.hidden)send("P "+performance.now().toFixed(1))},500);
 const pad=$("pad"),knob=$("knob");let pid=null;
-function setKnob(x,y){jx=x;jy=y;knob.style.transform=`translate(${x*120}%,${-y*120}%)`}
-function padMove(e){const b=pad.getBoundingClientRect(),r=b.width/2;let x=(e.clientX-b.left-r)/(r*0.8),y=-(e.clientY-b.top-r)/(r*0.8);
-  const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}setKnob(x,y)}
+function setStick(x,y){thr=y;trn=-x;knob.style.transform=`translate(${x*118}%,${-y*118}%)`;dirty=true}
+function padMove(e){const b=pad.getBoundingClientRect(),r=b.width/2;let x=(e.clientX-b.left-r)/(r*.82),y=-(e.clientY-b.top-r)/(r*.82);
+  const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}setStick(x,y)}
 pad.addEventListener("pointerdown",e=>{pid=e.pointerId;try{pad.setPointerCapture(pid)}catch(_){}padMove(e)});
 pad.addEventListener("pointermove",e=>{if(e.pointerId===pid)padMove(e)});
-["pointerup","pointercancel","lostpointercapture"].forEach(t=>pad.addEventListener(t,e=>{if(e.pointerId===pid){pid=null;setKnob(0,0)}}));
-document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>{sp=+b.dataset.s;sEdit++;show()});
-$("stop").onclick=()=>{setKnob(0,0);stopReq=true};
-$("zero").onclick=()=>{if(!cfg)return;for(let i=0;i<6;i++)q[i]=clamp(0,cfg.lo[i],cfg.hi[i]);editQ()};
-$("allon").onclick=()=>{if(cfg){mask=cfg.usable;mEdit++;show()}};
-$("limp").onclick=()=>{mask=0;mEdit++;show()};
-$("gopen").onclick=()=>{if(cfg){q[5]=cfg.hi[5];editQ()}};
-$("gclose").onclick=()=>{if(cfg){q[5]=cfg.lo[5];editQ()}};
-$("forget").onclick=async()=>{if(confirm("Forget the robot's gamepad? The next one that connects will be accepted."))await fetch("/forgetpad",{cache:"no-store"})};
-document.addEventListener("visibilitychange",()=>{if(document.hidden)setKnob(0,0)});
-load();setInterval(tick,100);
+["pointerup","pointercancel","lostpointercapture"].forEach(t=>pad.addEventListener(t,e=>{if(e.pointerId===pid){pid=null;setStick(0,0);sendDrive(true)}}));
+// ---- buttons
+$("stop").onclick=()=>{setStick(0,0);send("X");sendDrive(true)};
+document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>{sp=+b.dataset.s;send("S "+sp);showSpeed()});
+$("armOn").onclick=()=>send("A 1");
+$("limp").onclick=()=>send("A 0");
+$("fine").onclick=()=>{fine=!fine;$("fine").classList.toggle("sel",fine)};
+$("fs").onclick=async()=>{try{await document.documentElement.requestFullscreen();await screen.orientation.lock("landscape")}catch(e){}};
+function showSpeed(){document.querySelectorAll("#speed button").forEach(b=>b.classList.toggle("sel",+b.dataset.s===sp))}
+// ---- arm: hold buttons send a speed (robot moves the joint until release), sliders send a target
+function build(){
+  const box=$("joints");box.innerHTML="";
+  NAMES.forEach(([id,n],i)=>{
+    const ok=(cfg.usable>>i)&1,d=document.createElement("div");d.className="j";
+    const minus=i===5?"close":"−",plus=i===5?"open":"+";
+    d.innerHTML=`<div class="n">${id}<small>${n}</small></div><button class="h" data-i="${i}" data-d="-1" ${ok?"":"disabled"}>${minus}</button>
+<div class="slot"><div class="v" id="v${i}">--</div><input type="range" id="r${i}" min="${cfg.lo[i]}" max="${cfg.hi[i]}" step="0.5" value="${q[i]}" ${ok?"":"disabled"}></div>
+<button class="h" data-i="${i}" data-d="1" ${ok?"":"disabled"}>${plus}</button><button class="t" id="t${i}" ${ok?"":"disabled"}>OFF</button>`;
+    box.appendChild(d);
+    const r=$("r"+i);
+    r.addEventListener("pointerdown",()=>drag=i);
+    ["pointerup","pointercancel"].forEach(t=>r.addEventListener(t,()=>{drag=-1}));
+    r.oninput=()=>{qSend[i]=+r.value;$("v"+i).textContent=(+r.value).toFixed(1)+"°"};
+    $("t"+i).onclick=()=>{mask^=1<<i;send("M "+mask);showJoints()};
+  });
+  box.querySelectorAll(".h").forEach(b=>{
+    const i=+b.dataset.i,dir=+b.dataset.d;let p=null;
+    const stop=()=>{if(p===null)return;p=null;b.classList.remove("held");send("V "+i+" 0")};
+    b.addEventListener("pointerdown",e=>{p=e.pointerId;try{b.setPointerCapture(p)}catch(_){}b.classList.add("held");send("V "+i+" "+dir*(fine?15:50))});
+    ["pointerup","pointercancel","lostpointercapture"].forEach(t=>b.addEventListener(t,stop));
+  });
+  $("calnote").innerHTML=!cfg.pca?'<span class="warn">Servo board (PCA9685) not found: check SDA/SCL and its power.</span>':
+    !cfg.cal?'<span class="warn">No arm calibration on the robot: run the calibrator over USB and Save to robot.</span>':
+    "Arm ON: every joint jumps to its target, so hold the arm near the shown angles first. Hold − / + to move.";
+  showJoints();
+}
+function showJoints(){if(!cfg)return;
+  for(let i=0;i<6;i++){const r=$("r"+i);if(!r)continue;if(drag!==i){r.value=q[i];$("v"+i).textContent=q[i].toFixed(1)+"°"}
+    const t=$("t"+i),o=(mask>>i)&1;t.textContent=o?"ON":"OFF";t.classList.toggle("on",!!o)}}
+document.addEventListener("visibilitychange",()=>{if(document.hidden){setStick(0,0);sendDrive(true)}});
+connect();
 </script></body></html>)HTML";
