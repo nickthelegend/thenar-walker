@@ -201,6 +201,11 @@ void padTick(uint32_t now, float dt) {
   uint8_t dp = pad->dpad();
   uint16_t pressed = b & ~padPrevBtn;
   padPrevBtn = b;
+  static const char *const NAMES[] = {"A", "B", "X", "Y", "L1", "R1", "L2", "R2", "L3", "R3"};
+  for (int i = 0; i < 10; i++)   // bring-up log: every button press shows on the serial monitor
+    if (pressed & (1 << i)) Serial.printf("pad %s\n", NAMES[i]);
+  static uint8_t prevDp = 0;
+  if (dp != prevDp) { Serial.printf("pad dpad %X  sticks L %d,%d  R %d,%d\n", dp, pad->axisX(), pad->axisY(), pad->axisRX(), pad->axisRY()); prevDp = dp; }
   padThr = -stick(pad->axisY());               // stick up = forward
   padTrn = -stick(pad->axisX());               // stick left = turn left
   if (pressed & BUTTON_B) { stopAll(); rumble(pad, 120); }
@@ -209,12 +214,16 @@ void padTick(uint32_t now, float dt) {
   if (pressed & BUTTON_X) padFine = !padFine;
   // hold START 1 s: every calibrated joint on; hold SELECT 1 s: arm limp
   bool st = misc & MISC_BUTTON_START, se = misc & MISC_BUTTON_SELECT;
+  static uint16_t prevMisc = 0;
+  if ((misc & ~prevMisc) & MISC_BUTTON_START) Serial.println("pad START (hold 1 s = arm on)");
+  if ((misc & ~prevMisc) & MISC_BUTTON_SELECT) Serial.println("pad SELECT (hold 1 s = arm limp)");
+  prevMisc = misc;
   if (st && !startDown) startDown = now;
   if (!st) startDown = 0;
-  if (st && startDown && uint32_t(now - startDown) >= HOLD_MS) { setMask(usableMask()); startDown = 0; rumble(pad, 300); }
+  if (st && startDown && uint32_t(now - startDown) >= HOLD_MS) { setMask(usableMask()); startDown = 0; rumble(pad, 300); Serial.printf("arm ON mask %02X\n", onMask()); }
   if (se && !selectDown) selectDown = now;
   if (!se) selectDown = 0;
-  if (se && selectDown && uint32_t(now - selectDown) >= HOLD_MS) { setMask(0); selectDown = 0; rumble(pad, 300); }
+  if (se && selectDown && uint32_t(now - selectDown) >= HOLD_MS) { setMask(0); selectDown = 0; rumble(pad, 300); Serial.println("arm limp"); }
   float v[6] = {
       stick(pad->axisRX()),                                                  // pan: right = + (clockwise from above)
       -stick(pad->axisRY()),                                                 // shoulder: up = + (lean forward)
