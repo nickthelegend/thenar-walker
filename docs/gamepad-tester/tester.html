@@ -131,7 +131,7 @@ kbd { font: 500 11px var(--mono); padding: 1px 5px; border-radius: 4px; border: 
   <div class="grid">
     <div class="col">
       <section class="panel" aria-label="Controller">
-        <h2><span class="grow">Controller</span><span class="chip" id="cSrc">demo</span></h2>
+        <h2><span class="grow">Controller</span><span class="chip" id="cSrc">waiting</span></h2>
         <svg id="pad" viewBox="0 0 640 410" role="img" aria-label="Live controller diagram">
           <!-- shoulder triggers + bumpers (behind the body) -->
           <g id="b6"><rect class="k" x="112" y="14" width="104" height="34" rx="12"/><rect class="trig-fill" id="t6" x="112" y="48" width="104" height="0" rx="4"/><text class="lbl" x="164" y="33">L2 open</text></g>
@@ -194,7 +194,7 @@ kbd { font: 500 11px var(--mono); padding: 1px 5px; border-radius: 4px; border: 
           </div>
           <div class="wheels"><span>L</span><div class="bar"><span class="mid"></span><span class="fill" id="wl"></span></div><span id="wlv">0 %</span>
             <span>R</span><div class="bar"><span class="mid"></span><span class="fill" id="wr"></span></div><span id="wrv">0 %</span></div>
-          <div class="demo" id="demo">demo — waiting for a controller</div>
+          <div class="demo" id="demo">waiting for a controller — press any button on it</div>
         </div>
       </section>
 
@@ -248,7 +248,7 @@ const S = { q: [0, 0, 0, 0, 0, 30], armOn: true, fine: false, speed: 1, latch: f
             x: 0, z: 0, heading: 0, wAng: [0, 0], v: [0, 0, 0, 0, 0, 0], thr: 0, trn: 0 };
 let prevBtn = [], holdT = { 8: 0, 9: 0 }, holdDone = { 8: false, 9: false };
 
-// ------------------------------------------------------------------ input: real gamepad, keyboard, or demo
+// ------------------------------------------------------------------ input: real gamepad or keyboard
 let blocked = false, activeIndex = -1, lastPadId = '';
 function pads() {
   if (!navigator.getGamepads) return [];
@@ -297,8 +297,8 @@ function readInput(now) {
     return { src: 'keys', id: 'Keyboard', mapping: 'standard', axes: [k('KeyD') - k('KeyA'), k('KeyS') - k('KeyW'),
              k('ArrowRight') - k('ArrowLeft'), k('ArrowDown') - k('ArrowUp')], buttons: b, count: 17 };
   }
-  // demo: nothing connected yet; step() waves the arm so the page shows what it does
-  return { src: 'demo', id: 'demo', mapping: 'standard', axes: [0, 0, 0, 0], buttons: new Array(17).fill(0), count: 17 };
+  // nothing connected: all inputs at rest, so nothing moves
+  return { src: 'none', id: 'none', mapping: 'standard', axes: [0, 0, 0, 0], buttons: new Array(17).fill(0), count: 17 };
 }
 
 // ------------------------------------------------------------------ the same control rules as the robot
@@ -326,7 +326,7 @@ function rumble(ms, strong = 0.7) {
 function step(inp, dt, now) {
   const ax = i => dz(inp.axes[i] || 0), bv = i => inp.buttons[i] || 0, down = i => bv(i) > 0.5;
   const edge = i => down(i) && !prevBtn[i];
-  if (inp.src !== 'demo') for (let i = 0; i < 17; i++) if (edge(i)) log(`${STD[i]} pressed`);
+  if (inp.src !== 'none') for (let i = 0; i < 17; i++) if (edge(i)) log(`${STD[i]} pressed`);
   let thr = -ax(1), trn = -ax(0);
   if (edge(1)) { S.latch = true; S.wheel = [0, 0]; rumble(120); log('STOP — wheels latched until the stick is centred'); }
   if (edge(5) && S.speed < 2) { S.speed++; log(`speed ${['Slow', 'Mid', 'Fast'][S.speed]}`); }
@@ -354,10 +354,7 @@ function step(inp, dt, now) {
   }
   const l2 = Math.max(down(6) ? 1 : 0, bv(6)), r2 = Math.max(down(7) ? 1 : 0, bv(7));
   S.v = [ax(2), -ax(3), +down(13) - +down(12), +down(0) - +down(3), +down(15) - +down(14), l2 - r2];
-  if (inp.src === 'demo') {   // demo: a slow wave toward a fixed path, without wandering off to the limits
-    const t = reduced ? 0 : now / 1000;
-    const goal = [35 * Math.sin(t * 0.5), 10 + 15 * Math.sin(t * 0.37), -10 + 20 * Math.sin(t * 0.45), 15 * Math.sin(t * 0.6), 40 * Math.sin(t * 0.3), 30 + 25 * Math.sin(t * 0.8)];
-    for (let i = 0; i < 6; i++) S.q[i] += clamp(goal[i] - S.q[i], -30 * dt, 30 * dt);
+  if (inp.src === 'none') {   // nothing connected: nothing moves
     S.v = [0, 0, 0, 0, 0, 0];
   } else if (S.armOn) {
     const kk = (S.fine ? FINE_DPS : PAD_DPS) * dt;
@@ -540,7 +537,7 @@ function drawHud(inp) {
     const v = S.wheel[i], f = $(id); f.style.left = (Math.min(0.5, 0.5 + v / 2) * 100) + '%'; f.style.width = (Math.abs(v) / 2 * 100) + '%';
     $(id + 'v').textContent = Math.round(v * 100) + ' %';
   }
-  $('demo').hidden = inp.src !== 'demo';
+  $('demo').hidden = inp.src !== 'none';
   const c = $('cConn'), m = $('cMap'), src = $('cSrc');
   if (inp.src === 'pad') {
     c.textContent = inp.id.replace(/\s*\(.*$/, '').slice(0, 42) || 'controller'; c.className = 'chip live';
@@ -550,7 +547,7 @@ function drawHud(inp) {
     src.textContent = 'live'; src.className = 'chip live';
   } else {
     c.textContent = blocked ? 'controllers blocked here' : 'no controller'; c.className = 'chip' + (blocked ? ' warn' : '');
-    m.hidden = true; src.textContent = inp.src === 'keys' ? 'keyboard' : 'demo'; src.className = 'chip' + (inp.src === 'keys' ? ' warn' : '');
+    m.hidden = true; src.textContent = inp.src === 'keys' ? 'keyboard' : 'waiting'; src.className = 'chip' + (inp.src === 'keys' ? ' warn' : '');
   }
 }
 
