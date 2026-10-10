@@ -1,0 +1,577 @@
+<title>Thenar Pad Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: workshop bench — controller on the left, the rover it drives on the right, raw signal readout underneath.
+   One deliberate dark look (control-station screen), so both host themes get the same page. */
+:root {
+  --bg: #0d1116;          /* bench */
+  --panel: #151b22;       /* instrument panel */
+  --panel-2: #1b232c;
+  --line: #2a3541;
+  --fg: #e7ecf1;
+  --dim: #8d9bab;
+  --accent: #f2913d;      /* PETG orange, same as the printed tub */
+  --live: #57d68d;        /* signal present */
+  --stop: #ff5d55;
+  --warn: #ffc15e;
+  --btn-a: #3fc777; --btn-b: #ec4b43; --btn-x: #3e86e6; --btn-y: #f2c230;
+  --display: "Chakra Petch", "Bahnschrift", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font: 14px/1.45 var(--body); padding-inline: 16px; padding-block: 14px 40px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 14px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+h1 { font: 700 24px/1.1 var(--display); letter-spacing: .04em; margin: 0; text-transform: uppercase; }
+h1 span { color: var(--accent); }
+.sub { color: var(--dim); font-size: 13px; flex: 1 1 280px; min-width: 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font: 500 12px var(--mono); padding: 4px 10px; border-radius: 99px;
+  background: var(--panel-2); color: var(--dim); border: 1px solid var(--line); white-space: nowrap; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .8; }
+.chip.live { color: var(--live); border-color: color-mix(in srgb, var(--live) 45%, var(--line)); }
+.chip.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+.chip.stop { color: var(--stop); border-color: color-mix(in srgb, var(--stop) 45%, var(--line)); }
+button { font: 500 13px var(--body); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.banner { border: 1px solid color-mix(in srgb, var(--warn) 50%, var(--line)); background: color-mix(in srgb, var(--warn) 8%, var(--panel));
+  border-radius: 10px; padding: 10px 14px; color: var(--fg); }
+.banner b { color: var(--warn); }
+.banner a { color: var(--accent); }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.panel h2 { font: 700 12px var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); margin: 0 0 8px; display: flex; gap: 8px; align-items: center; }
+.panel h2 .grow { flex: 1; }
+.col { display: grid; gap: 14px; min-width: 0; }
+
+/* controller */
+#pad { width: 100%; height: auto; display: block; }
+#pad .body { fill: #c8322c; stroke: #7e1813; stroke-width: 2; }
+#pad .grip { fill: #a5251f; }
+#pad .face { fill: #1a1f25; }
+#pad .k { fill: #252c34; stroke: #0b0e11; stroke-width: 1.5; transition: fill .06s; }
+#pad .k.on { fill: var(--accent); }
+#pad .face-btn { stroke: #0b0e11; stroke-width: 2; }
+#pad .face-btn.on { stroke: #fff; stroke-width: 3; filter: brightness(1.35); }
+#pad .glyph { font: 700 15px var(--display); fill: #0b0e11; pointer-events: none; text-anchor: middle; dominant-baseline: central; }
+#pad .lbl { font: 600 10.5px var(--mono); fill: #f7d9d6; letter-spacing: .04em; text-anchor: middle; pointer-events: none; }
+#pad .lbl.dark { fill: var(--dim); }
+#pad .well { fill: #11151a; stroke: #0b0e11; stroke-width: 2; }
+#pad .dzone { fill: none; stroke: #3a4652; stroke-dasharray: 3 3; }
+#pad .cap { fill: #2b333c; stroke: #0b0e11; stroke-width: 2; }
+#pad .cap.on { fill: var(--accent); }
+#pad .trail { fill: none; stroke: var(--accent); stroke-width: 2; opacity: .55; }
+#pad .trig-fill { fill: var(--accent); }
+#pad .hold { fill: none; stroke: var(--live); stroke-width: 4; stroke-linecap: round; transform-origin: center; }
+
+/* what it moves */
+.acts { display: grid; gap: 4px; }
+.act { display: grid; grid-template-columns: 112px minmax(0, 1fr) 64px; gap: 10px; align-items: center; padding: 5px 8px;
+  border-radius: 7px; border: 1px solid transparent; }
+.act.hot { background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.act .nm { font-weight: 600; font-size: 13px; }
+.act .nm small { display: block; font: 400 11px var(--mono); color: var(--dim); }
+.act .val { font: 500 12.5px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.bar { position: relative; height: 10px; border-radius: 5px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
+.bar .fill { position: absolute; top: 0; bottom: 0; background: var(--accent); }
+.bar .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--dim); opacity: .6; }
+.bar .mark { position: absolute; top: -1px; bottom: -1px; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--fg); }
+
+/* 3D */
+.stage { position: relative; height: clamp(320px, 52vh, 560px); border-radius: 10px; overflow: hidden; background: #10161d; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hud { position: absolute; left: 10px; top: 10px; right: 10px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.hud .chip { background: rgba(13,17,22,.82); }
+.wheels { position: absolute; left: 10px; bottom: 10px; display: grid; grid-template-columns: auto 120px auto; gap: 4px 8px; align-items: center;
+  font: 500 11.5px var(--mono); color: var(--dim); background: rgba(13,17,22,.82); padding: 8px 10px; border-radius: 8px; pointer-events: none; }
+.wheels .bar { height: 8px; }
+.stage .demo { position: absolute; right: 10px; bottom: 10px; font: 500 12px var(--mono); color: var(--warn); background: rgba(13,17,22,.82);
+  padding: 6px 10px; border-radius: 8px; pointer-events: none; }
+
+/* raw */
+.raw { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 14px; }
+@media (max-width: 700px) { .raw { grid-template-columns: minmax(0, 1fr); } }
+.axrow { display: grid; grid-template-columns: 58px minmax(0, 1fr) 58px; gap: 8px; align-items: center; font: 500 12px var(--mono); margin-bottom: 6px; }
+.axrow .bar .dz { position: absolute; top: 0; bottom: 0; left: 44%; width: 12%; background: rgba(255,255,255,.07); }
+.axrow .v { text-align: right; font-variant-numeric: tabular-nums; }
+.btns { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px; }
+.b { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 7px; padding: 5px 7px; font: 500 11.5px var(--mono); background: var(--panel-2); }
+.b i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; }
+.b.on { border-color: var(--accent); color: var(--accent); }
+.b small { color: var(--dim); }
+.log { font: 400 12px var(--mono); color: var(--dim); max-height: 132px; overflow: auto; margin: 0; padding: 0; list-style: none; }
+.log li:first-child { color: var(--fg); }
+.help { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 18px; font-size: 13px; color: var(--dim); }
+.help b { color: var(--fg); font-weight: 600; }
+.help ol { margin: 4px 0 0; padding-left: 18px; }
+kbd { font: 500 11px var(--mono); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { #pad .k, #pad .face-btn { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Thenar <span>Pad Check</span></h1>
+    <p class="sub">Press any button on the controller. Everything you touch lights up here and moves the Thenar Walker below, with the same layout the robot uses.</p>
+    <span class="chip" id="cConn">no controller</span>
+    <span class="chip" id="cMap" hidden>standard</span>
+    <button id="rumble" type="button">Test vibration</button>
+    <button id="reset" type="button">Reset rover</button>
+  </header>
+
+  <div class="banner" id="blocked" hidden></div>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel" aria-label="Controller">
+        <h2><span class="grow">Controller</span><span class="chip" id="cSrc">demo</span></h2>
+        <svg id="pad" viewBox="0 0 640 410" role="img" aria-label="Live controller diagram">
+          <!-- shoulder triggers + bumpers (behind the body) -->
+          <g id="b6"><rect class="k" x="112" y="14" width="104" height="34" rx="12"/><rect class="trig-fill" id="t6" x="112" y="48" width="104" height="0" rx="4"/><text class="lbl" x="164" y="33">L2 open</text></g>
+          <g id="b7"><rect class="k" x="424" y="14" width="104" height="34" rx="12"/><rect class="trig-fill" id="t7" x="424" y="48" width="104" height="0" rx="4"/><text class="lbl" x="476" y="33">R2 close</text></g>
+          <rect id="b4" class="k" x="102" y="46" width="124" height="22" rx="9"/><text class="lbl" x="164" y="60">L1 speed −</text>
+          <rect id="b5" class="k" x="414" y="46" width="124" height="22" rx="9"/><text class="lbl" x="476" y="60">R1 speed +</text>
+          <!-- body -->
+          <path class="body" d="M180 70 C230 58 410 58 460 70 C540 72 585 110 598 180 C612 260 622 330 590 362 C560 392 512 380 492 340 C470 300 450 286 420 286 L220 286 C190 286 170 300 148 340 C128 380 80 392 50 362 C18 330 28 260 42 180 C55 110 100 72 180 70 Z"/>
+          <path class="grip" d="M42 180 C34 250 26 320 50 362 C80 392 128 380 148 340 C120 330 76 290 64 210 Z"/>
+          <path class="grip" d="M598 180 C606 250 614 320 590 362 C560 392 512 380 492 340 C520 330 564 290 576 210 Z"/>
+          <!-- d-pad -->
+          <circle class="face" cx="165" cy="165" r="54"/>
+          <rect id="b12" class="k" x="152" y="122" width="26" height="32" rx="4"/>
+          <rect id="b13" class="k" x="152" y="176" width="26" height="32" rx="4"/>
+          <rect id="b14" class="k" x="122" y="152" width="32" height="26" rx="4"/>
+          <rect id="b15" class="k" x="176" y="152" width="32" height="26" rx="4"/>
+          <rect class="k" x="152" y="152" width="26" height="26"/>
+          <text class="lbl" x="165" y="100">↑↓ elbow · ←→ roll</text>
+          <!-- face buttons -->
+          <circle class="face" cx="475" cy="165" r="62"/>
+          <circle id="b3" class="face-btn" cx="475" cy="126" r="19" fill="var(--btn-y)"/><text class="glyph" x="475" y="126">Y</text>
+          <circle id="b0" class="face-btn" cx="475" cy="204" r="19" fill="var(--btn-a)"/><text class="glyph" x="475" y="204">A</text>
+          <circle id="b2" class="face-btn" cx="436" cy="165" r="19" fill="var(--btn-x)"/><text class="glyph" x="436" y="165">X</text>
+          <circle id="b1" class="face-btn" cx="514" cy="165" r="19" fill="var(--btn-b)"/><text class="glyph" x="514" y="165">B</text>
+          <text class="lbl" x="475" y="96">Y/A wrist · B STOP · X fine</text>
+          <!-- centre -->
+          <rect id="b8" class="k" x="252" y="112" width="40" height="16" rx="8"/><text class="lbl" x="272" y="146">SELECT</text>
+          <rect id="b9" class="k" x="348" y="112" width="40" height="16" rx="8"/><text class="lbl" x="368" y="146">START</text>
+          <circle id="hold8" class="hold" cx="272" cy="120" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 272 120)"/>
+          <circle id="hold9" class="hold" cx="368" cy="120" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 368 120)"/>
+          <circle id="b16" class="k" cx="320" cy="176" r="15"/><text class="lbl" x="320" y="207">HOME</text>
+          <text class="lbl dark" x="320" y="352">hold 1 s: SELECT = arm limp · START = arm on</text>
+          <!-- sticks -->
+          <circle class="well" cx="245" cy="250" r="44"/><circle class="dzone" cx="245" cy="250" r="7"/>
+          <path id="trailL" class="trail" d=""/>
+          <circle id="capL" class="cap" cx="245" cy="250" r="23"/>
+          <text class="lbl" x="245" y="316">DRIVE</text>
+          <circle class="well" cx="395" cy="250" r="44"/><circle class="dzone" cx="395" cy="250" r="7"/>
+          <path id="trailR" class="trail" d=""/>
+          <circle id="capR" class="cap" cx="395" cy="250" r="23"/>
+          <text class="lbl" x="395" y="316">J1 PAN · J2 SHOULDER</text>
+        </svg>
+      </section>
+
+      <section class="panel" aria-label="What each control moves">
+        <h2>What it moves</h2>
+        <div class="acts" id="acts"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel" aria-label="Robot">
+        <h2><span class="grow">Thenar Walker</span><span style="font:400 11px var(--mono);letter-spacing:0;text-transform:none">drag to orbit · scroll to zoom</span></h2>
+        <div class="stage" id="stage">
+          <div class="hud">
+            <span class="chip" id="hSpeed">MID 65 %</span>
+            <span class="chip live" id="hArm">ARM ON</span>
+            <span class="chip" id="hFine" hidden>PRECISION</span>
+            <span class="chip stop" id="hStop" hidden>STOP — centre the stick</span>
+          </div>
+          <div class="wheels"><span>L</span><div class="bar"><span class="mid"></span><span class="fill" id="wl"></span></div><span id="wlv">0 %</span>
+            <span>R</span><div class="bar"><span class="mid"></span><span class="fill" id="wr"></span></div><span id="wrv">0 %</span></div>
+          <div class="demo" id="demo">demo — waiting for a controller</div>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Raw signals">
+        <h2><span class="grow">Raw signals</span><span class="chip" id="cHz">— Hz</span></h2>
+        <div class="raw">
+          <div>
+            <div id="axes"></div>
+            <p style="color:var(--dim);font-size:12px;margin:6px 0 0">Sticks at rest should sit inside the shaded band (±0.12). Outside it = stick drift.</p>
+          </div>
+          <div><div class="btns" id="btns"></div></div>
+        </div>
+        <h2 style="margin-top:12px">Events</h2>
+        <ul class="log" id="log"><li>Waiting for a controller. Press any button on it.</li></ul>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-label="How to connect">
+    <h2>Connect the controller</h2>
+    <div class="help">
+      <div><b>PC with the USB dongle</b><ol><li>Plug the receiver in, switch the controller on.</li><li>Press any button here. The chip at the top turns green.</li></ol></div>
+      <div><b>PC or phone over Bluetooth</b><ol><li>Put the controller in pairing mode (see its manual — usually HOME + a mode button until the LED flashes fast).</li><li>Pair it in the system Bluetooth settings.</li><li>Open this page in Chrome or Edge and press any button.</li></ol></div>
+      <div><b>No controller?</b> Keyboard works too: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · arrows right stick · <kbd>I</kbd><kbd>K</kbd><kbd>J</kbd><kbd>L</kbd> d-pad · <kbd>Y</kbd>/<kbd>H</kbd> wrist · <kbd>Q</kbd>/<kbd>E</kbd> gripper · <kbd>Z</kbd>/<kbd>C</kbd> speed · <kbd>B</kbd> stop · <kbd>X</kbd> fine · hold <kbd>Enter</kbd> arm on · hold <kbd>Backspace</kbd> limp.</div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(() => {
+// ------------------------------------------------------------------ robot rules (firmware/thenar_phone + ThenarLink tw_robot.h)
+const Q_LO = [-85, -80, -80, -80, -85, 0], Q_HI = [85, 80, 80, 80, 85, 70];
+const SPEED_SCALE = [0.35, 0.65, 1], TURN_SCALE = [0.5, 0.75, 1], SPIN_MIN = 0.35, DEADBAND = 0.05, ACCEL = 2.5;
+const PAD_DPS = 60, FINE_DPS = 20, HOLD_MS = 1000, DEAD = 0.12;
+const WHEEL_R = 70, TOP_SPEED = 100 / 60 * 2 * Math.PI * WHEEL_R;   // 100 rpm on Ø140 = 733 mm/s
+const TRACK_EFF = 270;                                               // skid-steer: turns slower than the 170 mm track suggests
+const STD = ['A', 'B', 'X', 'Y', 'L1', 'R1', 'L2', 'R2', 'SELECT', 'START', 'L3', 'R3', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'HOME'];
+const AXN = ['LX', 'LY', 'RX', 'RY'];
+const JN = [['J1', 'Base pan', 'right stick ←→'], ['J2', 'Shoulder', 'right stick ↑↓'], ['J3', 'Elbow', 'd-pad ↑↓'],
+            ['J4', 'Wrist flex', 'Y / A'], ['J5', 'Wrist roll', 'd-pad ←→'], ['J6', 'Gripper', 'L2 / R2']];
+const REST = [0, -80, 80, 50, 0, 0];   // where a limp arm sags to (STOW-like)
+
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const dz = v => Math.abs(v) < DEAD ? 0 : (v - Math.sign(v) * DEAD) / (1 - DEAD);
+const $ = id => document.getElementById(id);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const S = { q: [0, 0, 0, 0, 0, 30], armOn: true, fine: false, speed: 1, latch: false, wheel: [0, 0], wheelT: [0, 0],
+            x: 0, z: 0, heading: 0, wAng: [0, 0], v: [0, 0, 0, 0, 0, 0], thr: 0, trn: 0 };
+let prevBtn = [], holdT = { 8: 0, 9: 0 }, holdDone = { 8: false, 9: false };
+
+// ------------------------------------------------------------------ input: real gamepad, keyboard, or demo
+let blocked = false, activeIndex = -1, lastPadId = '';
+function pads() {
+  if (!navigator.getGamepads) return [];
+  try { return [...navigator.getGamepads()].filter(p => p && p.connected); }
+  catch (e) { if (!blocked) showBlocked(); return []; }
+}
+function showBlocked() {
+  blocked = true;
+  const b = $('blocked');
+  b.innerHTML = '<b>This window blocks controllers.</b> The page itself is fine, but the frame it is shown in does not pass gamepad input through. ' +
+    'Open the standalone copy: <a href="https://raw.githack.com/nickthelegend/thenar-walker/main/docs/gamepad-tester/index.html" target="_blank" rel="noopener">Thenar Pad Check (standalone)</a>, ' +
+    'or open <code>docs/gamepad-tester/index.html</code> from the repo straight in Chrome. Keyboard control below still works here.';
+  b.hidden = false;
+}
+try { if (document.featurePolicy && !document.featurePolicy.allowsFeature('gamepad')) showBlocked(); } catch (e) {}
+
+const keys = new Set(); let lastKey = -1e9;
+const KEYMAP = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyI', 'KeyK', 'KeyJ', 'KeyL',
+                'KeyY', 'KeyH', 'KeyQ', 'KeyE', 'KeyZ', 'KeyC', 'KeyB', 'KeyX', 'Enter', 'Backspace', 'Space'];
+addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input,textarea')) return;
+  if (KEYMAP.includes(e.code)) { keys.add(e.code); lastKey = performance.now(); e.preventDefault(); }
+});
+addEventListener('keyup', e => { keys.delete(e.code); lastKey = performance.now(); });
+addEventListener('blur', () => keys.clear());
+const k = c => keys.has(c) ? 1 : 0;
+
+function readInput(now) {
+  const list = pads();
+  let gp = null;
+  for (const p of list) {   // follow whichever controller was used last
+    const busy = p.buttons.some(b => b.pressed) || p.axes.some(a => Math.abs(a) > 0.5);
+    if (busy) activeIndex = p.index;
+  }
+  gp = list.find(p => p.index === activeIndex) || list[0] || null;
+  if (gp) {
+    const buttons = []; for (let i = 0; i < 17; i++) buttons[i] = gp.buttons[i] ? gp.buttons[i].value : 0;
+    return { src: 'pad', id: gp.id, mapping: gp.mapping, pad: gp, axes: [0, 1, 2, 3].map(i => gp.axes[i] || 0), allAxes: [...gp.axes],
+             buttons, count: gp.buttons.length, ts: gp.timestamp };
+  }
+  if (now - lastKey < 8000 || keys.size) {
+    const b = new Array(17).fill(0);
+    b[0] = k('KeyH'); b[1] = k('KeyB') || k('Space'); b[2] = k('KeyX'); b[3] = k('KeyY'); b[4] = k('KeyZ'); b[5] = k('KeyC');
+    b[6] = k('KeyQ'); b[7] = k('KeyE'); b[8] = k('Backspace'); b[9] = k('Enter');
+    b[12] = k('KeyI'); b[13] = k('KeyK'); b[14] = k('KeyJ'); b[15] = k('KeyL');
+    return { src: 'keys', id: 'Keyboard', mapping: 'standard', axes: [k('KeyD') - k('KeyA'), k('KeyS') - k('KeyW'),
+             k('ArrowRight') - k('ArrowLeft'), k('ArrowDown') - k('ArrowUp')], buttons: b, count: 17 };
+  }
+  // demo: nothing connected yet; step() waves the arm so the page shows what it does
+  return { src: 'demo', id: 'demo', mapping: 'standard', axes: [0, 0, 0, 0], buttons: new Array(17).fill(0), count: 17 };
+}
+
+// ------------------------------------------------------------------ the same control rules as the robot
+function mixDrive(thr, trn, sp) {
+  if (Math.abs(thr) < DEADBAND) thr = 0;
+  if (Math.abs(trn) < DEADBAND) trn = 0;
+  if (thr === 0 && trn !== 0) { const m = SPIN_MIN + (TURN_SCALE[sp] - SPIN_MIN) * Math.abs(trn); const l = trn > 0 ? -m : m; return [l, -l]; }
+  let l = thr * SPEED_SCALE[sp] - trn * TURN_SCALE[sp], r = thr * SPEED_SCALE[sp] + trn * TURN_SCALE[sp];
+  const m = Math.max(1, Math.abs(l), Math.abs(r)); return [l / m, r / m];
+}
+
+const events = [];
+function log(msg) {
+  const t = new Date(); const s = t.toTimeString().slice(0, 8);
+  events.unshift(`${s}  ${msg}`); events.length = Math.min(events.length, 40);
+  $('log').innerHTML = events.map(e => `<li>${e.replace(/</g, '&lt;')}</li>`).join('');
+}
+function rumble(ms, strong = 0.7) {
+  const p = pads().find(p => p.index === activeIndex) || pads()[0];
+  const a = p && p.vibrationActuator;
+  if (a && a.playEffect) a.playEffect('dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: strong * 0.6 }).catch(() => {});
+  return !!(a && a.playEffect);
+}
+
+function step(inp, dt, now) {
+  const ax = i => dz(inp.axes[i] || 0), bv = i => inp.buttons[i] || 0, down = i => bv(i) > 0.5;
+  const edge = i => down(i) && !prevBtn[i];
+  if (inp.src !== 'demo') for (let i = 0; i < 17; i++) if (edge(i)) log(`${STD[i]} pressed`);
+  let thr = -ax(1), trn = -ax(0);
+  if (edge(1)) { S.latch = true; S.wheel = [0, 0]; rumble(120); log('STOP — wheels latched until the stick is centred'); }
+  if (edge(5) && S.speed < 2) { S.speed++; log(`speed ${['Slow', 'Mid', 'Fast'][S.speed]}`); }
+  if (edge(4) && S.speed > 0) { S.speed--; log(`speed ${['Slow', 'Mid', 'Fast'][S.speed]}`); }
+  if (edge(2)) { S.fine = !S.fine; log(S.fine ? 'precision arm ON (20°/s)' : 'precision arm off (60°/s)'); }
+  for (const b of [8, 9]) {
+    if (!down(b)) { holdT[b] = 0; holdDone[b] = false; continue; }
+    if (!holdT[b]) holdT[b] = now;
+    if (!holdDone[b] && now - holdT[b] >= HOLD_MS) {
+      holdDone[b] = true; rumble(300);
+      if (b === 9) { S.armOn = true; log('arm ON (on the robot every calibrated joint jumps to its target)'); }
+      else { S.armOn = false; log('arm limp'); }
+    }
+  }
+  const centred = Math.abs(thr) < DEADBAND && Math.abs(trn) < DEADBAND;
+  if (S.latch && centred) { S.latch = false; log('stick centred — driving allowed again'); }
+  if (S.latch) thr = trn = 0;
+  S.thr = thr; S.trn = trn;
+  S.wheelT = mixDrive(thr, trn, S.speed);
+  const a = ACCEL * dt;
+  for (let i = 0; i < 2; i++) {
+    const t = S.wheelT[i]; let w = S.wheel[i];
+    if (t * w < 0) w = 0; else if (Math.abs(t) <= Math.abs(w)) w = t; else w += clamp(t - w, -a, a);
+    S.wheel[i] = w;
+  }
+  const l2 = Math.max(down(6) ? 1 : 0, bv(6)), r2 = Math.max(down(7) ? 1 : 0, bv(7));
+  S.v = [ax(2), -ax(3), +down(13) - +down(12), +down(0) - +down(3), +down(15) - +down(14), l2 - r2];
+  if (inp.src === 'demo') {   // demo: a slow wave toward a fixed path, without wandering off to the limits
+    const t = reduced ? 0 : now / 1000;
+    const goal = [35 * Math.sin(t * 0.5), 10 + 15 * Math.sin(t * 0.37), -10 + 20 * Math.sin(t * 0.45), 15 * Math.sin(t * 0.6), 40 * Math.sin(t * 0.3), 30 + 25 * Math.sin(t * 0.8)];
+    for (let i = 0; i < 6; i++) S.q[i] += clamp(goal[i] - S.q[i], -30 * dt, 30 * dt);
+    S.v = [0, 0, 0, 0, 0, 0];
+  } else if (S.armOn) {
+    const kk = (S.fine ? FINE_DPS : PAD_DPS) * dt;
+    for (let i = 0; i < 6; i++) S.q[i] = clamp(S.q[i] + S.v[i] * kk, Q_LO[i], Q_HI[i]);
+  } else {
+    for (let i = 0; i < 6; i++) S.q[i] += clamp(REST[i] - S.q[i], -40 * dt, 40 * dt);   // no torque: it sags
+  }
+  // skid-steer motion
+  const vl = S.wheel[0] * TOP_SPEED, vr = S.wheel[1] * TOP_SPEED;
+  const v = (vl + vr) / 2, w = (vr - vl) / TRACK_EFF;
+  S.heading += w * dt;
+  S.x += v * Math.cos(S.heading) * dt; S.z -= v * Math.sin(S.heading) * dt;
+  S.wAng[0] -= vl / WHEEL_R * dt; S.wAng[1] -= vr / WHEEL_R * dt;
+  prevBtn = []; for (let i = 0; i < 17; i++) prevBtn[i] = down(i);
+}
+
+// ------------------------------------------------------------------ controller drawing
+const capL = $('capL'), capR = $('capR'), trails = { L: [], R: [] };
+function setBtn(i, on) { const el = $('b' + i); if (!el) return; (el.tagName === 'g' ? el.querySelector('.k') : el).classList.toggle('on', on); }
+function drawPad(inp, now) {
+  for (let i = 0; i < 17; i++) setBtn(i, (inp.buttons[i] || 0) > 0.5);
+  for (const i of [6, 7]) { const v = clamp(inp.buttons[i] || 0, 0, 1), r = $('t' + i); r.setAttribute('height', (34 * v).toFixed(1)); r.setAttribute('y', (48 - 34 * v).toFixed(1)); }
+  const mv = (cap, cx, cy, x, y, pressed, key) => {
+    const px = cx + clamp(x, -1, 1) * 24, py = cy + clamp(y, -1, 1) * 24;
+    cap.setAttribute('cx', px.toFixed(1)); cap.setAttribute('cy', py.toFixed(1)); cap.classList.toggle('on', pressed || Math.hypot(x, y) > DEAD);
+    const tr = trails[key]; tr.push([px, py]); if (tr.length > 24) tr.shift();
+    $('trail' + key).setAttribute('d', tr.length > 1 ? 'M' + tr.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L') : '');
+  };
+  mv(capL, 245, 250, inp.axes[0], inp.axes[1], (inp.buttons[10] || 0) > 0.5, 'L');
+  mv(capR, 395, 250, inp.axes[2], inp.axes[3], (inp.buttons[11] || 0) > 0.5, 'R');
+  for (const b of [8, 9]) {
+    const p = holdT[b] && !holdDone[b] ? clamp((now - holdT[b]) / HOLD_MS, 0, 1) : (holdDone[b] ? 1 : 0);
+    $('hold' + b).setAttribute('stroke-dashoffset', (163.4 * (1 - p)).toFixed(1));
+  }
+}
+
+// ------------------------------------------------------------------ "what it moves" rows
+const acts = $('acts');
+const ROWS = [['drive', 'Drive', 'left stick ↑↓'], ['turn', 'Turn', 'left stick ←→'], ...JN.map((j, i) => ['j' + i, `${j[0]} ${j[1]}`, j[2]])];
+acts.innerHTML = ROWS.map(([id, n, c]) => `<div class="act" id="a_${id}"><div class="nm">${n}<small>${c}</small></div>
+  <div class="bar"><span class="mid"></span><span class="fill"></span><span class="mark"></span></div><div class="val">0</div></div>`).join('');
+function setRow(id, hot, frac0, frac1, mark, text) {
+  const r = $('a_' + id); r.classList.toggle('hot', hot);
+  const f = r.querySelector('.fill'); f.style.left = (Math.min(frac0, frac1) * 100).toFixed(1) + '%'; f.style.width = (Math.abs(frac1 - frac0) * 100).toFixed(1) + '%';
+  const m = r.querySelector('.mark'); m.hidden = mark == null; if (mark != null) m.style.left = (mark * 100).toFixed(1) + '%';
+  r.querySelector('.val').textContent = text;
+}
+function drawActs() {
+  setRow('drive', Math.abs(S.thr) > 0, 0.5, 0.5 + S.thr / 2, null, (S.thr * 100).toFixed(0) + ' %');
+  setRow('turn', Math.abs(S.trn) > 0, 0.5, 0.5 - S.trn / 2, null, S.trn > 0 ? 'left' : S.trn < 0 ? 'right' : '—');
+  for (let i = 0; i < 6; i++) {
+    const f = (S.q[i] - Q_LO[i]) / (Q_HI[i] - Q_LO[i]), z = (0 - Q_LO[i]) / (Q_HI[i] - Q_LO[i]);
+    setRow('j' + i, S.armOn && S.v[i] !== 0, z, f, f, S.q[i].toFixed(1) + '°');
+  }
+}
+
+// ------------------------------------------------------------------ raw readout
+const axesEl = $('axes'), btnsEl = $('btns');
+let axCount = -1, btnCount = -1;
+function drawRaw(inp) {
+  const axes = inp.allAxes || inp.axes;
+  if (axes.length !== axCount) {
+    axCount = axes.length;
+    axesEl.innerHTML = axes.map((_, i) => `<div class="axrow"><span>${AXN[i] || 'axis ' + i}</span><div class="bar"><span class="dz"></span><span class="mid"></span><span class="mark"></span></div><span class="v">0.00</span></div>`).join('');
+  }
+  [...axesEl.children].forEach((row, i) => {
+    const v = axes[i] || 0; row.querySelector('.mark').style.left = ((v + 1) / 2 * 100).toFixed(1) + '%';
+    row.querySelector('.v').textContent = (v >= 0 ? '+' : '') + v.toFixed(2);
+  });
+  const n = Math.max(17, inp.count || 17);
+  if (n !== btnCount) {
+    btnCount = n;
+    btnsEl.innerHTML = Array.from({ length: n }, (_, i) => `<div class="b" id="rb${i}">${i} <small>${STD[i] || ''}</small><i></i></div>`).join('');
+  }
+  for (let i = 0; i < n; i++) {
+    const v = inp.pad ? (inp.pad.buttons[i] ? inp.pad.buttons[i].value : 0) : (inp.buttons[i] || 0), el = $('rb' + i);
+    el.classList.toggle('on', v > 0.5); el.querySelector('i').style.width = (v * 100).toFixed(0) + '%';
+  }
+}
+
+// ------------------------------------------------------------------ 3D rover + arm (mm, x forward, y up, z right)
+const stage = $('stage');
+let renderer, scene, camera, controls, rover, wheels = [], joints = {}, armMats = [];
+function build3D() {
+  if (!window.THREE) { stage.insertAdjacentHTML('beforeend', '<div class="demo" style="left:10px;right:auto;top:50%">3D view could not load (no internet?) — the controller test still works.</div>'); return; }
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.prepend(renderer.domElement);
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0x10161d); scene.fog = new THREE.Fog(0x10161d, 2600, 6000);
+  camera = new THREE.PerspectiveCamera(40, 1, 5, 20000); camera.position.set(-620, 520, 760);
+  controls = new THREE.OrbitControls(camera, renderer.domElement); controls.target.set(0, 120, 0); controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 300; controls.maxDistance = 4000;
+  scene.add(new THREE.HemisphereLight(0xdfe8f2, 0x1a2028, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9); sun.position.set(-600, 1400, 500); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -900, right: 900, top: 900, bottom: -900, near: 100, far: 4000 });
+  scene.add(sun); scene.add(sun.target);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12000, 12000), new THREE.MeshStandardMaterial({ color: 0x1a222b, roughness: 1 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+  const grid = new THREE.GridHelper(12000, 60, 0x2c3a48, 0x222c37); grid.position.y = 0.5; scene.add(grid);
+  // task cubes (50 mm) scattered like the arena
+  const cubeCols = [0xf2c230, 0x3e86e6, 0x3fc777, 0xec4b43];
+  [[650, -250], [900, 300], [-500, 420], [300, 700], [-800, -500], [1300, -100]].forEach(([x, z], i) => {
+    const c = new THREE.Mesh(new THREE.BoxGeometry(50, 50, 50), new THREE.MeshStandardMaterial({ color: cubeCols[i % 4], roughness: 0.6 }));
+    c.position.set(x, 25, z); c.castShadow = c.receiveShadow = true; scene.add(c);
+  });
+  const M = (color, extra) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.55, metalness: 0.05 }, extra || {}));
+  const mesh = (geo, mat, x = 0, y = 0, z = 0, parent) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; (parent || rover).add(m); return m; };
+  rover = new THREE.Group(); scene.add(rover);
+  const petg = M(0xe8782a), wood = M(0xc9a066, { roughness: 0.8 }), dark = M(0x1d2228), tpu = M(0x15181c, { roughness: 0.95 }), hubM = M(0xd9dde2);
+  mesh(new THREE.BoxGeometry(240, 43, 138), petg, 0, 78.5, 0);            // tub, z 57..100
+  mesh(new THREE.BoxGeometry(250, 3, 138), wood, 0, 101.5, 0);            // 3 mm deck
+  mesh(new THREE.BoxGeometry(34, 14, 24), M(0xc4302b), -95, 110, 40);     // KCD4 kill switch
+  mesh(new THREE.BoxGeometry(60, 10, 40), M(0x1f6f43), -60, 108, -30);    // ESP32 + driver boards
+  for (const sx of [1, -1]) for (const sz of [1, -1]) {
+    const w = new THREE.Group(); w.position.set(sx * 77, WHEEL_R, sz * 85); rover.add(w);
+    const tyre = new THREE.Mesh(new THREE.CylinderGeometry(WHEEL_R, WHEEL_R, 30, 40), tpu); tyre.rotation.x = Math.PI / 2; tyre.castShadow = true; w.add(tyre);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(WHEEL_R - 12, WHEEL_R - 12, 31, 32), hubM); hub.rotation.x = Math.PI / 2; w.add(hub);
+    for (let s = 0; s < 5; s++) {   // spokes, so the turning is visible
+      const sp = new THREE.Mesh(new THREE.BoxGeometry(10, WHEEL_R - 14, 33), M(0x8a96a3)); sp.position.y = (WHEEL_R - 14) / 2;
+      const g = new THREE.Group(); g.rotation.z = s * Math.PI * 2 / 5; g.add(sp); w.add(g);
+    }
+    wheels.push({ g: w, side: sz > 0 ? 1 : 0 });   // z > 0 is the robot's right
+  }
+  // arm (thenar-arms / SO-ARM100 proportions)
+  const white = M(0xeef1f4), servo = M(0x23292f), grip = M(0xd8dde3);
+  armMats = [white, grip];
+  const base = mesh(new THREE.CylinderGeometry(38, 42, 26, 32), white, 55, 116, 0);
+  const pan = new THREE.Group(); pan.position.set(55, 129, 0); rover.add(pan);
+  mesh(new THREE.BoxGeometry(46, 40, 50), servo, 0, 20, 0, pan);
+  const sh = new THREE.Group(); sh.position.set(0, 52, 0); pan.add(sh);
+  mesh(new THREE.CylinderGeometry(15, 15, 56, 20), servo, 0, 0, 0, sh).rotation.x = Math.PI / 2;
+  mesh(new THREE.BoxGeometry(26, 116, 34), white, 0, 58, 0, sh);
+  const el = new THREE.Group(); el.position.set(0, 116, 0); sh.add(el);
+  mesh(new THREE.CylinderGeometry(14, 14, 50, 20), servo, 0, 0, 0, el).rotation.x = Math.PI / 2;
+  mesh(new THREE.BoxGeometry(22, 135, 30), white, 0, 67, 0, el);
+  const wr = new THREE.Group(); wr.position.set(0, 135, 0); el.add(wr);
+  mesh(new THREE.CylinderGeometry(12, 12, 44, 20), servo, 0, 0, 0, wr).rotation.x = Math.PI / 2;
+  mesh(new THREE.BoxGeometry(30, 50, 26), white, 0, 28, 0, wr);
+  const roll = new THREE.Group(); roll.position.set(0, 56, 0); wr.add(roll);
+  mesh(new THREE.BoxGeometry(44, 20, 30), servo, 0, 10, 0, roll);
+  const fixedJaw = mesh(new THREE.BoxGeometry(8, 80, 22), grip, -10, 58, 0, roll);
+  const moveJaw = mesh(new THREE.BoxGeometry(8, 80, 22), grip, 10, 58, 0, roll);
+  const pad1 = mesh(new THREE.BoxGeometry(12, 6, 22), M(0xf2913d), -10, 99, 0, roll);   // finger pads
+  const pad2 = mesh(new THREE.BoxGeometry(12, 6, 22), M(0xf2913d), 10, 99, 0, roll);
+  joints = { pan, sh, el, wr, roll, fixedJaw, moveJaw, pad1, pad2 };
+  const ro = new ResizeObserver(resize); ro.observe(stage); resize();
+}
+function resize() { if (!renderer) return; const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+const rad = d => d * Math.PI / 180;
+let camOff = null;
+function draw3D() {
+  if (!renderer) return;
+  rover.position.set(S.x, 0, S.z); rover.rotation.y = S.heading;
+  for (const w of wheels) w.g.rotation.z = S.wAng[w.side];
+  const q = S.q;
+  joints.pan.rotation.y = -rad(q[0]);              // + = clockwise from above (toward the robot's right)
+  joints.sh.rotation.z = -rad(q[1] + 13.9);         // q = -13.9: upper arm vertical; + leans forward
+  joints.el.rotation.z = -rad(q[2] + 73.8);         // q = -73.8: straight; + bends down
+  joints.wr.rotation.z = -rad(q[3] + 2.3);          // q = -2.3: gripper in line; + down
+  joints.roll.rotation.y = rad(q[4]);
+  const gap = clamp(20 + 1.35 * q[5], 4, 120);      // tips 20 mm apart at 0, about 1.35 mm per degree
+  joints.fixedJaw.position.x = -gap / 2 - 4; joints.moveJaw.position.x = gap / 2 + 4; joints.pad2.position.x = gap / 2 + 4;
+  joints.pad1.position.x = -gap / 2 - 4;
+  for (const m of armMats) m.color.setHex(S.armOn ? (m === armMats[0] ? 0xeef1f4 : 0xd8dde3) : 0x7d8792);
+  // camera follows the rover, keeping whatever angle the user orbited to
+  const tgt = new THREE.Vector3(S.x, 120, S.z);
+  const off = camera.position.clone().sub(controls.target);
+  controls.target.lerp(tgt, 0.12); camera.position.copy(controls.target).add(off);
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// ------------------------------------------------------------------ HUD + chips
+function drawHud(inp) {
+  $('hSpeed').textContent = `${['SLOW', 'MID', 'FAST'][S.speed]} ${Math.round(SPEED_SCALE[S.speed] * 100)} %`;
+  const arm = $('hArm'); arm.textContent = S.armOn ? 'ARM ON' : 'ARM LIMP'; arm.className = 'chip ' + (S.armOn ? 'live' : 'warn');
+  $('hFine').hidden = !S.fine; $('hStop').hidden = !S.latch;
+  for (const [i, id] of [[0, 'wl'], [1, 'wr']]) {
+    const v = S.wheel[i], f = $(id); f.style.left = (Math.min(0.5, 0.5 + v / 2) * 100) + '%'; f.style.width = (Math.abs(v) / 2 * 100) + '%';
+    $(id + 'v').textContent = Math.round(v * 100) + ' %';
+  }
+  $('demo').hidden = inp.src !== 'demo';
+  const c = $('cConn'), m = $('cMap'), src = $('cSrc');
+  if (inp.src === 'pad') {
+    c.textContent = inp.id.replace(/\s*\(.*$/, '').slice(0, 42) || 'controller'; c.className = 'chip live';
+    m.hidden = false; m.textContent = inp.mapping === 'standard' ? 'standard layout' : 'non-standard layout';
+    m.className = 'chip ' + (inp.mapping === 'standard' ? 'live' : 'warn');
+    m.title = inp.mapping === 'standard' ? '' : 'The browser does not know this controller. Buttons may sit in other places; the raw panel shows the real numbers.';
+    src.textContent = 'live'; src.className = 'chip live';
+  } else {
+    c.textContent = blocked ? 'controllers blocked here' : 'no controller'; c.className = 'chip' + (blocked ? ' warn' : '');
+    m.hidden = true; src.textContent = inp.src === 'keys' ? 'keyboard' : 'demo'; src.className = 'chip' + (inp.src === 'keys' ? ' warn' : '');
+  }
+}
+
+// ------------------------------------------------------------------ loop
+addEventListener('gamepadconnected', e => { activeIndex = e.gamepad.index; log(`connected: ${e.gamepad.id} (${e.gamepad.mapping || 'no'} mapping, ${e.gamepad.buttons.length} buttons, ${e.gamepad.axes.length} axes)`); });
+addEventListener('gamepaddisconnected', e => { log(`disconnected: ${e.gamepad.id} — robot would stop its wheels`); if (e.gamepad.index === activeIndex) activeIndex = -1; });
+$('rumble').onclick = () => { if (!rumble(400, 1)) log(pads().length ? 'this controller does not report vibration to the browser' : 'connect a controller first'); else log('vibration sent'); };
+$('reset').onclick = () => { Object.assign(S, { x: 0, z: 0, heading: 0, wheel: [0, 0], latch: false, q: [0, 0, 0, 0, 0, 30], armOn: true }); log('rover reset'); };
+
+let last = performance.now(), frames = 0, hzT = last, lastTs = 0, updates = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const inp = readInput(now);
+  if (inp.src === 'pad' && inp.id !== lastPadId) { lastPadId = inp.id; }
+  if (inp.ts && inp.ts !== lastTs) { lastTs = inp.ts; updates++; }
+  step(inp, dt, now);
+  drawPad(inp, now); drawActs(); drawRaw(inp); drawHud(inp); draw3D();
+  if (now - hzT > 1000) { $('cHz').textContent = inp.src === 'pad' ? `${updates} updates/s` : '— updates/s'; updates = 0; hzT = now; }
+  requestAnimationFrame(frame);
+}
+build3D();
+requestAnimationFrame(frame);
+})();
+</script>
