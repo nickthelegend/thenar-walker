@@ -3,7 +3,10 @@
 `thenar_pi` is the Python port of `firmware/thenar_phone`: the same phone page, the same WebSocket protocol on port 81,
 the same safety rules (300 ms link timeout, STOP latch, limp start, slew limits, calibrated safe ends), the same
 calibrator line protocol (now over Wi-Fi on port 82), and the same calibration record (layout and CRC checked against
-`tw_armcal.h` by a test). New: `GET /snap.jpg` gives the brain (Hasami: SAM + Muse) a camera frame.
+`tw_armcal.h` by a test). New: `GET /snap.jpg` gives the brain (Hasami: SAM + Muse) a camera frame, and the brain
+drives through its own WebSocket on **port 83** with the phone's messages at lower priority: real phone input takes
+control for 2 s (`E manual`), a phone STOP pauses the brain until a human sends `R` (`E paused`), the brain can always
+STOP, and each side has its own 300 ms link timeout. With no brain connected the robot behaves exactly as before.
 
 The ESP32 build stays in `firmware/` and still works; the two speak the same protocol, so the phone page, the
 calibrator and Hasami don't care which brain the robot has.
@@ -57,8 +60,8 @@ stick. If a side runs backwards, swap its motor leads (or flip `SIDE_SIGN` in `t
 ## Without the robot
 ```
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/python -m thenar_pi --dry-run       # page + protocol on :80/:81/:82, no I2C, GPIO or camera
-cd tests && ../.venv/bin/python -m pytest -q  # 26 tests (on Windows: .venv\Scripts\python -m pytest -q)
+.venv/bin/python -m thenar_pi --dry-run       # page + protocol on :80/:81/:82/:83, no I2C, GPIO or camera
+cd tests && ../.venv/bin/python -m pytest -q  # 32 tests (on Windows: .venv\Scripts\python -m pytest -q)
 ```
 The tests drive the real robot logic, server and sockets on top of recording stand-ins for the I2C bus and the pins
 (`tests/fakes.py`), and compile `tw_armcal.h` to prove the calibration record matches the ESP32's byte for byte.

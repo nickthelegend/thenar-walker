@@ -20,7 +20,7 @@ async def srv(tmp_path):
     pins = FakePins(battery=11.7)
     robot = Robot(PCA9685(FakeBus()), pins, state_dir=str(tmp_path), ssid="Test_TF")
     robot.boot()
-    s = Server(robot, None, http_port=0, ws_port=0, cal_port=0, host="127.0.0.1")
+    s = Server(robot, None, http_port=0, ws_port=0, cal_port=0, host="127.0.0.1", brain_port=0)
     await s.start()
     yield s, robot, pins
     await s.stop()
@@ -93,3 +93,26 @@ async def test_calibrator_websocket(srv):
         assert await asyncio.wait_for(ws.recv(), 2) == "OK P 0 2000" and pins.oe
         await ws.send("OFF")
         assert await asyncio.wait_for(ws.recv(), 2) == "OK OFF" and not pins.oe
+
+
+async def test_brain_drives_until_the_phone_takes_over(srv):
+    s, robot, pins = srv
+    async with websockets.connect(f"ws://127.0.0.1:{s.brain_port}/") as brain, \
+            websockets.connect(f"ws://127.0.0.1:{s.ws_port}/") as phone:
+        assert (await asyncio.wait_for(brain.recv(), 2)).startswith("C{")
+        await phone.recv()
+        for _ in range(10):                                   # brain drives; the phone only heartbeats
+            await brain.send("D 100 0")
+            await phone.send("D 0 0")
+            await asyncio.sleep(0.04)
+        assert pins.motors[0] > 0.5
+        await phone.send("X")                                 # the operator presses STOP
+        await brain.send("D 100 0")
+        replies = []
+        while not any(m.startswith("E ") for m in replies) and len(replies) < 40:   # telemetry may be queued first
+            replies.append(await asyncio.wait_for(brain.recv(), 2))
+        assert "E manual" in replies or "E paused" in replies
+        await asyncio.sleep(0.1)
+        assert pins.motors == [0.0, 0.0] and robot.brain_paused
+        h = json.loads((await asyncio.get_running_loop().run_in_executor(None, get, s.http_port, "/health"))[2])
+        assert h["brain"] and h["brain_paused"]

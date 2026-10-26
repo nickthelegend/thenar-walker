@@ -49,7 +49,8 @@ channels) jumped/oscillated on small steps — do the servo-swap test (good serv
 ## Control: phone only (current)
 On the Pi: `python -m thenar_pi` (folder `pi/`, see `pi/README.md`), a line-for-line port of the firmware below:
 same page, same port-81 WebSocket, same rules; the calibrator talks to it over a WebSocket on port 82 (**Connect Pi
-(Wi-Fi)**), and `GET /snap.jpg` serves a camera frame. `pi/tools/extract_page.py` regenerates its pages from the .ino
+(Wi-Fi)**), `GET /snap.jpg` serves a camera frame, and the Hasami brain drives through port 83 at lower priority than
+the phone (phone input takes control for 2 s, phone STOP pauses the brain until a human resumes it). `pi/tools/extract_page.py` regenerates its pages from the .ino
 and `docs/calibrator`, so there is one source for each.
 
 `firmware/thenar_phone/thenar_phone.ino` is the ESP32 robot firmware. Robot = Wi-Fi AP `ThenarWalker_TF` (WPA2, one client);
@@ -75,7 +76,7 @@ Secrets: `firmware/libraries/ThenarLink/src/team_config.h` (Wi-Fi password + lin
 ## Repo map
 | Path | Status | What |
 |---|---|---|
-| `pi/` | **active** | Raspberry Pi runtime `thenar_pi` (robot rules, server, camera, calibration record, AP setup, systemd unit), 26 tests |
+| `pi/` | **active** | Raspberry Pi runtime `thenar_pi` (robot rules, server, camera, calibration record, brain channel, AP setup, systemd unit), 32 tests |
 | `firmware/thenar_phone/` | **active** | phone control firmware for the ESP32-S3 (above) |
 | `docs/calibrator/` | **active** | Web Serial arm calibrator (two-reference method, safe ends, Save to robot) |
 | `firmware/libraries/ThenarLink/` | active | shared headers: `tw_armcal.h` (NVS calibration record, CRC, validation), `tw_robot.h` (drive mixing constants, failsafe state machine), `tw_link.h`/`tw_sha256.h` (HMAC UDP link) |

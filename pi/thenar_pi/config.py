@@ -49,4 +49,6 @@ SPIN_MIN = 0.35                            # spin-in-place breakaway floor
 HTTP_PORT = _env_int("HTTP_PORT", 80)      # the phone page
 WS_PORT = _env_int("WS_PORT", 81)          # the phone's WebSocket (the page connects to :81)
 CAL_PORT = _env_int("CAL_PORT", 82)        # the calibrator's line protocol over a WebSocket
+BRAIN_PORT = _env_int("BRAIN_PORT", 83)    # the brain (Hasami): same messages as the phone, lower priority
+MANUAL_HOLD_S = 2.0                        # real phone input takes control from the brain for this long
 STATE_DIR = os.environ.get("THENAR_STATE_DIR", "/var/lib/thenar")

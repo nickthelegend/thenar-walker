@@ -170,3 +170,69 @@ def test_raw_pulses_slew_at_the_rate(rig):
     assert r.raw_cur[4] == pytest.approx(1650, abs=5)                  # 300 us/s
     run(r, clock, 1.0)
     assert r.raw_cur[4] == pytest.approx(1800)
+
+
+# ------------------------------------------------------------------ the brain (Hasami) and the phone
+def drive_both(r, clock, seconds, phone=None, brain=None):
+    t_end, nxt = clock.t + seconds, clock.t
+    while clock.t < t_end - 1e-9:
+        clock.advance(config.TICK_S)
+        if clock.t >= nxt:
+            if phone is not None:
+                r.handle(phone)
+            if brain is not None:
+                r.handle(brain, source="brain")
+            nxt += 0.04
+        r.tick()
+
+
+def test_without_a_brain_nothing_changes(rig):
+    r, bus, pins, clock = rig()
+    r.connected()
+    drive_both(r, clock, 0.6, phone="D 100 0")
+    assert pins.motors[0] == pytest.approx(0.65) and not r.brain_up
+
+
+def test_brain_drives_while_the_phone_idles(rig):
+    r, bus, pins, clock = rig()
+    r.connected()
+    drive_both(r, clock, 0.6, phone="D 0 0", brain="D 100 0")
+    assert pins.motors[0] == pytest.approx(0.65)
+
+
+def test_phone_input_takes_control_for_two_seconds(rig):
+    r, bus, pins, clock = rig()
+    r.connected()
+    drive_both(r, clock, 0.6, phone="D 0 0", brain="D 100 0")
+    drive_both(r, clock, 0.3, phone="D -100 0", brain="D 100 0")      # the operator reverses
+    assert pins.motors[0] < 0
+    assert r.handle("D 100 0", source="brain") == ["E manual"]
+    drive_both(r, clock, 2.6, phone="D 0 0", brain="D 100 0")         # operator lets go: after 2 s the brain is back (+ramp)
+    assert pins.motors[0] == pytest.approx(0.65)
+
+
+def test_phone_stop_pauses_the_brain_until_a_human_resumes(rig):
+    r, bus, pins, clock = rig()
+    r.connected()
+    drive_both(r, clock, 0.6, phone="D 0 0", brain="D 100 0")
+    r.handle("X")
+    drive_both(r, clock, 3.0, phone="D 0 0", brain="D 100 0")
+    assert r.brain_paused and pins.motors == [0.0, 0.0]
+    assert r.handle("Q 0 30", source="brain") == ["E paused"]
+    assert r.handle("R", source="brain") == ["E resumed"]
+    drive_both(r, clock, 0.6, phone="D 0 0", brain="D 100 0")
+    assert pins.motors[0] == pytest.approx(0.65)
+
+
+def test_brain_can_always_stop_and_its_silence_stops_its_wheels(rig):
+    r, bus, pins, clock = rig()
+    r.connected()
+    r.handle("A 1", source="brain")
+    drive_both(r, clock, 0.6, phone="D 0 0", brain="D 100 0")
+    r.handle("V 1 40", source="brain")
+    drive_both(r, clock, 0.4, phone="D 0 0")                           # brain silent > 300 ms, phone still there
+    assert pins.motors == [0.0, 0.0] and not r.brain_up and r.vel == [0.0] * 6 and pins.oe   # arm holds
+    drive_both(r, clock, 0.2, phone="D 0 0", brain="D 100 0")
+    r.handle("X", source="brain")
+    drive_both(r, clock, 0.2, phone="D 0 0", brain="D 100 0")
+    assert r.stop_latch and pins.motors == [0.0, 0.0]

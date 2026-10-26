@@ -27,6 +27,7 @@ def main() -> None:
     ap.add_argument("--http-port", type=int, default=config.HTTP_PORT)
     ap.add_argument("--ws-port", type=int, default=config.WS_PORT)
     ap.add_argument("--cal-port", type=int, default=config.CAL_PORT)
+    ap.add_argument("--brain-port", type=int, default=config.BRAIN_PORT)
     ap.add_argument("--state-dir", default=config.STATE_DIR)
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
@@ -37,7 +38,7 @@ def main() -> None:
         bus, pins, camera, ssid = hw.open_i2c(), hw.PiPins(), Camera(), a.ssid
     robot = Robot(hw.PCA9685(bus), pins, state_dir=a.state_dir, ssid=ssid, dry_run=a.dry_run)
     robot.boot()
-    server = Server(robot, camera, a.http_port, a.ws_port, a.cal_port)
+    server = Server(robot, camera, a.http_port, a.ws_port, a.cal_port, brain_port=a.brain_port)
 
     async def run() -> None:
         await server.start()

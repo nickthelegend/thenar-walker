@@ -11,6 +11,12 @@ stays where it is with PWM on (the gripper keeps its grip). STOP latches the whe
 latch keeps the last stick input (zeroing it would release the latch on the next tick). Every joint starts limp;
 switching a joint on makes it go to its target at once. Angles are clamped to the calibrated safe ends; joints not
 marked done in the calibrator can't be switched on.
+
+The brain (Hasami) is new on the Pi: it sends the phone's messages on its own WebSocket (port 83) and the phone always
+has priority. Real phone input (stick out of the deadband, STOP, arm or speed buttons) takes control for 2 s and the
+brain's motion commands are refused with "E manual"; a phone STOP also pauses the brain ("E paused") until a human
+at the brain's side sends "R". The brain can always send STOP. Each source has its own 300 ms link timeout; with no
+brain connected the robot behaves exactly like the ESP32 build.
 """
 from __future__ import annotations
 
@@ -83,9 +89,14 @@ class Robot:
         self.goal, self.cur, self.vel = [0.0] * 6, [0.0] * 6, [0.0] * 6
         self.on, self.raw = [False] * 6, [False] * 6
         self.raw_cur, self.raw_tgt, self.raw_rate = [1500.0] * 6, [1500.0] * 6, 300.0
-        self.thr = self.trn = 0.0
+        self.thr = self.trn = 0.0          # the phone's stick
+        self.bthr = self.btrn = 0.0        # the brain's stick
         self.wheel_t, self.wheel = [0.0, 0.0], [0.0, 0.0]
         self.last_msg = self.last_tick = 0.0
+        self.brain_last = 0.0
+        self.brain_up = False              # a brain is connected and talking
+        self.brain_paused = False          # the phone pressed STOP: the brain waits for a human "R"
+        self.manual_until = 0.0            # real phone input holds control until then
         self.battery: float | None = None
 
     # ------------------------------------------------------------- setup
@@ -191,19 +202,77 @@ class Robot:
         q = " ".join(f"{c:.1f}" for c in self.cur)
         return f"T {bat:.2f} {self.on_mask()} {self.speed} {int(self.stop_latch)} {q}"
 
-    def handle(self, c: str) -> list[str]:
-        """One phone message; returns the replies to send back."""
-        self.last_msg = self.clock()
+    def handle(self, c: str, source: str = "phone") -> list[str]:
+        """One message from the phone (or, with source="brain", from the brain); returns the replies to send back."""
+        now = self.clock()
+        if source == "brain":
+            return self._brain(c, now)
+        self.last_msg = now
         if not self.link_up:
             self.link_up = True
             log.info("phone link back")
         if not c:
             return []
+        if self._is_input(c):   # a person is driving: the brain waits
+            self.manual_until = now + config.MANUAL_HOLD_S
+            if c[0] == "X" and self.brain_up and not self.brain_paused:
+                self.brain_paused = True
+                log.info("phone STOP -> brain paused until a human resumes it")
+        return self._apply(c, brain=False)
+
+    @staticmethod
+    def _is_input(c: str) -> bool:
+        """Real phone input, as opposed to its idle heartbeat (D 0 0), pings and config requests."""
+        if c[0] in "XAMQVS":
+            return True
+        if c[0] == "D":
+            v = _scan(c[1:], (int, int))
+            return bool(v) and (abs(v[0]) >= 5 or abs(v[1]) >= 5)
+        return False
+
+    def _brain(self, c: str, now: float) -> list[str]:
+        """The brain speaks the phone's messages; it can always STOP, otherwise the phone has priority."""
+        self.brain_last = now
+        if not self.brain_up:
+            self.brain_up = True
+            log.info("brain connected")
+        if not c:
+            return []
+        k = c[0]
+        if k == "X":
+            self.stop_all()
+            return []
+        if k == "R":   # a human at the brain's side resumes autonomy after a phone STOP
+            if now < self.manual_until:
+                return ["E manual"]
+            self.brain_paused = False
+            log.info("brain resumed")
+            return ["E resumed"]
+        if k in "DSAMQV":
+            if self.brain_paused:
+                return ["E paused"]
+            if now < self.manual_until:
+                return ["E manual"]
+        return self._apply(c, brain=True)
+
+    def brain_in_control(self, now: float) -> bool:
+        return self.brain_up and not self.brain_paused and now >= self.manual_until
+
+    def brain_disconnected(self) -> None:
+        self.brain_up = False
+        self.bthr = self.btrn = 0.0
+        self.freeze_arm()
+        log.info("brain disconnected -> its wheels stopped, arm holding")
+
+    def _apply(self, c: str, brain: bool) -> list[str]:
         k, rest = c[0], c[1:]
         if k == "D":
             v = _scan(rest, (int, int))
             if v:
-                self.thr, self.trn = v[0] / 100.0, v[1] / 100.0
+                if brain:
+                    self.bthr, self.btrn = v[0] / 100.0, v[1] / 100.0
+                else:
+                    self.thr, self.trn = v[0] / 100.0, v[1] / 100.0
         elif k == "S":
             v = _scan(rest, (_int,))
             if v:
@@ -316,17 +385,26 @@ class Robot:
         dt = min(now - self.last_tick, 0.1)
         self.last_tick = now
 
+        brain = self.brain_in_control(now)
         if self.link_up and now - self.last_msg > config.LINK_TIMEOUT_S:   # phone silent: stop wheels, hold the arm
             self.link_up = False
             self.thr = self.trn = 0.0
-            self.freeze_arm()
+            if not brain:
+                self.freeze_arm()
             log.info("phone silent -> wheels stopped, arm holding")
+        if self.brain_up and now - self.brain_last > config.LINK_TIMEOUT_S:   # brain silent: same rule for the brain
+            self.brain_up = False
+            self.bthr = self.btrn = 0.0
+            if brain:
+                self.freeze_arm()
+            log.info("brain silent -> its wheels stopped, arm holding")
+            brain = False
 
-        centred = abs(self.thr) < config.DRIVE_DEADBAND and abs(self.trn) < config.DRIVE_DEADBAND
+        thr, trn = (self.bthr, self.btrn) if brain else (self.thr, self.trn)   # whoever is in control drives
+        centred = abs(thr) < config.DRIVE_DEADBAND and abs(trn) < config.DRIVE_DEADBAND
         if self.stop_latch and centred:
             self.stop_latch = False
-        self.wheel_t = list(drive_targets(0 if self.stop_latch else self.thr, 0 if self.stop_latch else self.trn,
-                                          self.speed))
+        self.wheel_t = list(drive_targets(0 if self.stop_latch else thr, 0 if self.stop_latch else trn, self.speed))
         step = config.DRIVE_ACCEL_PER_S * dt
         for k in range(2):
             self.wheel[k] = ramp(self.wheel_t[k], self.wheel[k], step)
