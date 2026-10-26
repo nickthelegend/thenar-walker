@@ -49,6 +49,9 @@ Full measured results: **[docs/VERIFICATION.md](docs/VERIFICATION.md)** (SolidWo
 
 ## Contents
 
+Project brief for Claude Code sessions: [CLAUDE.md](CLAUDE.md) · reusable lessons for new robot projects: [docs/PLAYBOOK.md](docs/PLAYBOOK.md)
+
+
 | Path | What |
 |---|---|
 | `cad/assemblies/Thenar_Walker.SLDASM` | Robot. Configurations **STOW**, HOME, REACH_450, PICK_FLOOR, DRIVE_ONLY |
