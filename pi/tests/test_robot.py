@@ -236,3 +236,17 @@ def test_brain_can_always_stop_and_its_silence_stops_its_wheels(rig):
     r.handle("X", source="brain")
     drive_both(r, clock, 0.2, phone="D 0 0", brain="D 100 0")
     assert r.stop_latch and pins.motors == [0.0, 0.0]
+
+
+def test_brain_idle_heartbeat_is_accepted_and_takeover_is_announced(rig):
+    r, bus, pins, clock = rig()
+    r.connected()
+    assert r.handle("D 0 0", source="brain") == [] and r.brain_up
+    assert r.brain_notes == []
+    r.handle("D 80 0")                                                 # the operator grabs the stick
+    assert r.brain_notes == ["E manual"]
+    assert r.handle("D 0 0", source="brain") == []                     # idle heartbeat: still fine, no reply
+    assert r.handle("D 50 0", source="brain") == ["E manual"]          # a real stick is refused
+    r.brain_notes.clear()
+    r.handle("X")
+    assert r.brain_notes == ["E paused"] and r.brain_paused

@@ -61,7 +61,7 @@ stick. If a side runs backwards, swap its motor leads (or flip `SIDE_SIGN` in `t
 ```
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/python -m thenar_pi --dry-run       # page + protocol on :80/:81/:82/:83, no I2C, GPIO or camera
-cd tests && ../.venv/bin/python -m pytest -q  # 32 tests (on Windows: .venv\Scripts\python -m pytest -q)
+cd tests && ../.venv/bin/python -m pytest -q  # 33 tests (on Windows: .venv\Scripts\python -m pytest -q)
 ```
 The tests drive the real robot logic, server and sockets on top of recording stand-ins for the I2C bus and the pins
 (`tests/fakes.py`), and compile `tw_armcal.h` to prove the calibration record matches the ESP32's byte for byte.

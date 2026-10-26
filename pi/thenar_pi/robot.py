@@ -97,6 +97,7 @@ class Robot:
         self.brain_up = False              # a brain is connected and talking
         self.brain_paused = False          # the phone pressed STOP: the brain waits for a human "R"
         self.manual_until = 0.0            # real phone input holds control until then
+        self.brain_notes: list[str] = []   # told to the brain at once (the server drains it): E manual / E paused
         self.battery: float | None = None
 
     # ------------------------------------------------------------- setup
@@ -214,9 +215,12 @@ class Robot:
         if not c:
             return []
         if self._is_input(c):   # a person is driving: the brain waits
+            if self.brain_up and now >= self.manual_until and not self.brain_paused:
+                self.brain_notes.append("E manual")
             self.manual_until = now + config.MANUAL_HOLD_S
             if c[0] == "X" and self.brain_up and not self.brain_paused:
                 self.brain_paused = True
+                self.brain_notes.append("E paused")
                 log.info("phone STOP -> brain paused until a human resumes it")
         return self._apply(c, brain=False)
 
@@ -248,6 +252,11 @@ class Robot:
             self.brain_paused = False
             log.info("brain resumed")
             return ["E resumed"]
+        if k == "D":   # the brain's idle heartbeat is always fine; only a real stick needs control
+            v = _scan(c[1:], (int, int))
+            if v and abs(v[0]) < 5 and abs(v[1]) < 5:
+                self.bthr = self.btrn = 0.0
+                return []
         if k in "DSAMQV":
             if self.brain_paused:
                 return ["E paused"]

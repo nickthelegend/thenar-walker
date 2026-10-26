@@ -52,6 +52,14 @@ class Server:
                 if isinstance(msg, str):
                     for reply in self.robot.handle(msg):
                         await ws.send(reply)
+                    if self.robot.brain_notes:   # the operator took over or pressed STOP: tell the brain now
+                        notes, self.robot.brain_notes = self.robot.brain_notes, []
+                        if self.brain is not None:
+                            for n in notes:
+                                try:
+                                    await self.brain.send(n)
+                                except websockets.ConnectionClosed:
+                                    pass
         except websockets.ConnectionClosed:
             pass
         finally:

@@ -76,7 +76,7 @@ Secrets: `firmware/libraries/ThenarLink/src/team_config.h` (Wi-Fi password + lin
 ## Repo map
 | Path | Status | What |
 |---|---|---|
-| `pi/` | **active** | Raspberry Pi runtime `thenar_pi` (robot rules, server, camera, calibration record, brain channel, AP setup, systemd unit), 32 tests |
+| `pi/` | **active** | Raspberry Pi runtime `thenar_pi` (robot rules, server, camera, calibration record, brain channel, AP setup, systemd unit), 33 tests |
 | `firmware/thenar_phone/` | **active** | phone control firmware for the ESP32-S3 (above) |
 | `docs/calibrator/` | **active** | Web Serial arm calibrator (two-reference method, safe ends, Save to robot) |
 | `firmware/libraries/ThenarLink/` | active | shared headers: `tw_armcal.h` (NVS calibration record, CRC, validation), `tw_robot.h` (drive mixing constants, failsafe state machine), `tw_link.h`/`tw_sha256.h` (HMAC UDP link) |
