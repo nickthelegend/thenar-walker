@@ -63,12 +63,13 @@
     <div class="row">
       <span id="conn" class="pill bad">not connected</span>
       <span id="pca" class="pill">PCA9685 ?</span>
-      <button id="btnConnect" class="primary big">Connect ESP32</button>
+      <button id="btnConnect" class="primary big">Connect ESP32 (USB)</button>
+      <button id="btnConnectPi" class="primary big">Connect Pi (Wi-Fi)</button>
       <button id="btnOff" class="danger big" disabled>ALL SERVOS OFF</button>
     </div>
   </header>
 
-  <div id="noserial" class="note red" hidden>This browser has no Web Serial. Open this page in <b>Chrome</b> or <b>Edge</b> on a computer (not a phone).</div>
+  <div id="noserial" class="note red" hidden>This browser has no Web Serial. Open this page in <b>Chrome</b> or <b>Edge</b> on a computer (not a phone), or use <b>Connect Pi (Wi-Fi)</b> for the Raspberry Pi build.</div>
 
   <details class="panel">
     <summary>Before you start (read once)</summary>
@@ -244,8 +245,13 @@ async function connect() {
     readLoop();
     setConn('connecting…', 'warn');
     await sleep(1200);
+    await afterConnect('no reply — is arm_calibration flashed?');
+  } catch (e) { log('connect failed: ' + e.message); setConn('not connected', 'bad'); }
+}
+async function afterConnect(noReply) {
+  try {
     const r = await cmd('HELLO', 2500).catch(() => null) || await cmd('HELLO', 2500).catch(() => null);
-    if (!r || !r.startsWith('OK HELLO')) { setConn('no reply — is arm_calibration flashed?', 'bad'); return; }
+    if (!r || !r.startsWith('OK HELLO')) { setConn(noReply, 'bad'); return; }
     const pca = / pca=1/.test(r);
     setConn('connected', 'ok');
     const pp = document.getElementById('pca'); pp.textContent = pca ? 'PCA9685 found' : 'PCA9685 NOT found'; pp.className = 'pill ' + (pca ? 'ok' : 'bad');
@@ -268,14 +274,33 @@ async function readLoop() {
       let k;
       while ((k = lineBuf.indexOf('\n')) >= 0) {
         const line = lineBuf.slice(0, k).replace('\r', ''); lineBuf = lineBuf.slice(k + 1);
-        if (!line.trim()) continue;
-        log('← ' + line);
-        const w = waiters[0];
-        if (w) { if (/^(OK|ERR)/.test(line)) { waiters.shift(); w.res(w.extra.concat([line]).join('\n')); } else w.extra.push(line); }
+        onLine(line);
       }
     }
   } catch (e) { log('serial closed: ' + e.message); }
   finally { reader.releaseLock(); setConn('disconnected', 'bad'); enableAll(false); }
+}
+function onLine(line) {   // one reply line from either transport (USB serial or the Pi's WebSocket)
+  if (!line.trim()) return;
+  log('← ' + line);
+  const w = waiters[0];
+  if (w) { if (/^(OK|ERR)/.test(line)) { waiters.shift(); w.res(w.extra.concat([line]).join('\n')); } else w.extra.push(line); }
+}
+// Raspberry Pi build (thenar-walker/pi): the same line protocol over a WebSocket on port 82, one message per line.
+async function connectPi() {
+  const here = location.protocol === 'http:' && location.pathname.startsWith('/calibrator');   // served by the Pi runtime itself
+  const host = here ? location.hostname : (prompt('Robot address (the Pi on the robot Wi-Fi)', localStorage.getItem('tw-pi-host') || '192.168.4.1') || '').trim();
+  if (!host) return;
+  try { localStorage.setItem('tw-pi-host', host); } catch (e) {}
+  setConn('connecting…', 'warn');
+  const ws = new WebSocket('ws://' + host + ':82/');
+  const opened = await new Promise((res) => { ws.onopen = () => res(true); ws.onerror = () => res(false); setTimeout(() => res(false), 4000); });
+  if (!opened) { setConn('no robot at ' + host + ':82', 'bad'); return; }
+  ws.onmessage = (ev) => String(ev.data).split('\n').forEach((l) => onLine(l.replace('\r', '')));
+  ws.onclose = () => { setConn('disconnected', 'bad'); enableAll(false); };
+  const dec = new TextDecoder();
+  writer = { write: async (bytes) => ws.send(dec.decode(bytes).replace(/\n$/, '')) };
+  await afterConnect('no reply from the Pi runtime');
 }
 let chain = Promise.resolve();
 function cmd(c, timeout = 2000) {
@@ -389,6 +414,7 @@ function calHeader() {
 
 // ---------------------------------------------------------------- buttons
 $('btnConnect').onclick = connect;
+$('btnConnectPi').onclick = connectPi;
 $('btnOff').onclick = async () => { await cmd('OFF').catch(() => {}); live = live.map(() => false); msg('All servos limp.'); render(); };
 $('btnStart').onclick = async () => {
   const i = sel(), us = Number($('startUs').value) || 1500;
