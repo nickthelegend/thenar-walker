@@ -18,8 +18,12 @@ arm stops, gripper keeps holding, stays disabled until a new valid command · ha
 | Drive motors | 4 × local **370 plastic-gearbox** motors: gearbox Ø37.5 × 20, M8 × 13 collar + 13 mm nut through the tub wall, Ø6 shaft with cross-hole, 22 mm long. Passed the 750 ml bottle @ 7 cm lift test. Clearance 51.25 mm at the gearbox bottom, 57 mm at the tub floor (shaft = wheel radius = 70 mm) |
 | Motor driver | **Cytron MDD10A** Rev2, sign-magnitude PWM + DIR, 20 kHz. Ch1 = both left motors in parallel, ch2 = both right |
 | Arm | 6 × MG996R on a **PCA9685** (0x40, 50 Hz, OE active-low). Channels: 0 base pan, 1 shoulder lift, 2 elbow, 3 wrist flex, 4 wrist roll, 5 gripper (= J1..J6) |
-| Brain | **ESP32-S3** board with CP210x USB-UART (COM5 on the owner's PC) |
+| Brain | **Raspberry Pi** (moving from the ESP32-S3, Oct 26): `pi/` runs the same protocol and rules in Python and adds a camera for the Hasami brain. The **ESP32-S3** build (CP210x, COM5 on the owner's PC) still works and stays in `firmware/` |
 | Kill switch | KCD4 rocker (`cad/tools/make_kill_switch.py`), cuts all power |
+
+**Raspberry Pi pins (BCM, planned — confirm on the real wiring):** PCA9685 on I2C-1 (SDA GPIO2, SCL GPIO3), OE GPIO17 ·
+MDD10A PWM1 GPIO12, PWM2 GPIO13 (hardware PWM, 20 kHz, `dtoverlay=pwm-2chan`), DIR1 GPIO5, DIR2 GPIO6 · LED GPIO27 ·
+battery sense needs an ADS1115 (0x48), optional. Full table: `docs/WIRING_PI.md`. The Pi needs its own 5 V 5 A buck.
 
 **ESP32-S3 pins:** PCA9685 SDA 8, SCL 9, OE 10 (confirmed) · MDD10A PWM1 4, DIR1 5, PWM2 6, DIR2 7 (**assumed — not yet
 confirmed by the team; verify before trusting wheel directions**) · battery sense GPIO1 (100k/27k) · LED 2.
@@ -43,7 +47,12 @@ roll 0 = jaws one above the other · gripper 0 = tips 20 mm apart, ~1.35 mm/°. 
 channels) jumped/oscillated on small steps — do the servo-swap test (good servo on a bad channel) before blaming code.
 
 ## Control: phone only (current)
-`firmware/thenar_phone/thenar_phone.ino` is THE robot firmware. Robot = Wi-Fi AP `ThenarWalker_TF` (WPA2, one client);
+On the Pi: `python -m thenar_pi` (folder `pi/`, see `pi/README.md`), a line-for-line port of the firmware below:
+same page, same port-81 WebSocket, same rules; the calibrator talks to it over a WebSocket on port 82 (**Connect Pi
+(Wi-Fi)**), and `GET /snap.jpg` serves a camera frame. `pi/tools/extract_page.py` regenerates its pages from the .ino
+and `docs/calibrator`, so there is one source for each.
+
+`firmware/thenar_phone/thenar_phone.ino` is the ESP32 robot firmware. Robot = Wi-Fi AP `ThenarWalker_TF` (WPA2, one client);
 phone opens `http://192.168.4.1` (page is inside the firmware), then everything runs over one **WebSocket on port 81**:
 - phone → robot: `D thr turn` (−100..100, turn > 0 = left) · `S 0..2` speed · `X` STOP · `A 1|0` arm on/limp ·
   `M mask` · `Q joint deg` target · `V joint dps` hold-to-move speed (0 = stop) · `P n` ping · `G` config
@@ -66,7 +75,8 @@ Secrets: `firmware/libraries/ThenarLink/src/team_config.h` (Wi-Fi password + lin
 ## Repo map
 | Path | Status | What |
 |---|---|---|
-| `firmware/thenar_phone/` | **active** | phone control firmware (above) |
+| `pi/` | **active** | Raspberry Pi runtime `thenar_pi` (robot rules, server, camera, calibration record, AP setup, systemd unit), 26 tests |
+| `firmware/thenar_phone/` | **active** | phone control firmware for the ESP32-S3 (above) |
 | `docs/calibrator/` | **active** | Web Serial arm calibrator (two-reference method, safe ends, Save to robot) |
 | `firmware/libraries/ThenarLink/` | active | shared headers: `tw_armcal.h` (NVS calibration record, CRC, validation), `tw_robot.h` (drive mixing constants, failsafe state machine), `tw_link.h`/`tw_sha256.h` (HMAC UDP link) |
 | `firmware/arm_calibration/` | superseded | standalone calibration bridge (thenar_phone now speaks the same protocol) |
@@ -78,7 +88,7 @@ Secrets: `firmware/libraries/ThenarLink/src/team_config.h` (Wi-Fi password + lin
 | `analysis/` | reference | arm FK, stow search (why the deck is low), drive sizing, gripper gap |
 | `sim/` | reference | MuJoCo model + firmware-in-the-loop bridge, missions |
 | `videos/thenar-assembly/` | done | HyperFrames assembly film (render in GitHub release v1) |
-| `docs/` | mixed | BOM, ASSEMBLY, DESIGN, VERIFICATION, build book PDF; WIRING is out of date (classic ESP32 pins) |
+| `docs/` | mixed | BOM, ASSEMBLY, DESIGN, VERIFICATION, build book PDF; `WIRING_PI.md` is the Pi wiring; WIRING is out of date (classic ESP32 pins) |
 
 ## Owner's machine (Windows 11)
 arduino-cli + cores `esp32:esp32` 3.3.10 (and unused `esp32-bluepad32` 4.1.0) · JDK 17 in
@@ -110,8 +120,10 @@ Web Serial and gamepads).
   SolidWorks model/assembly is still v1 and needs resyncing.
 
 ## Open items
-1. Confirm the MDD10A pins and wheel directions on the real robot (wheels off the ground).
-2. Servo-swap test for J2/J4/J6; replace bad MG996R clones.
-3. Update `docs/WIRING.md` to the ESP32-S3 pins.
-4. Port `mobile/` (or delete it) and Pad Check's robot link to the WebSocket protocol, if still wanted.
-5. Resync the SolidWorks model to tub v2; re-check arm vs kill switch clearance.
+1. Bring up the Pi build on the robot: Raspberry Pi OS Bookworm, I2C on, `pwm-2chan` overlay, `i2cdetect` shows 40,
+   `thenar_pi.armcal seed-known`, wheels off the ground, then the phone. Confirm the Pi model and the camera.
+2. Confirm the MDD10A pins and wheel directions on the real robot (wheels off the ground).
+3. Servo-swap test for J2/J4/J6; replace bad MG996R clones.
+4. Update `docs/WIRING.md` to the ESP32-S3 pins.
+5. Port `mobile/` (or delete it) and Pad Check's robot link to the WebSocket protocol, if still wanted.
+6. Resync the SolidWorks model to tub v2; re-check arm vs kill switch clearance.
