@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "thenar-pi"
+version = "0.1.0"
+description = "Thenar Walker robot runtime for the Raspberry Pi (port of firmware/thenar_phone)"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = ["websockets>=12"]
+
+[project.optional-dependencies]
+pi = ["smbus2>=0.4", "gpiozero>=2.0", "lgpio>=0.2; platform_machine == 'aarch64'", "opencv-python-headless>=4.8"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[tool.setuptools]
+packages = ["thenar_pi"]
+
+[tool.setuptools.package-data]
+thenar_pi = ["static/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

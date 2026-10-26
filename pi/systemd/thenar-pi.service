@@ -1,0 +1,22 @@
+# Thenar Walker robot runtime. Install: sudo cp pi/systemd/thenar-pi.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now thenar-pi && journalctl -u thenar-pi -f
+[Unit]
+Description=Thenar Walker robot runtime (phone page :80, phone WebSocket :81, calibrator :82)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# root: ports 80-82, /sys/class/pwm and /var/lib/thenar; the code drops nothing it doesn't need
+User=root
+WorkingDirectory=/opt/thenar-walker/pi
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/etc/thenar-pi.env
+ExecStart=/opt/thenar-walker/pi/.venv/bin/python -m thenar_pi
+# on stop: wheels 0, every servo limp, OE high (Server.stop)
+KillSignal=SIGTERM
+TimeoutStopSec=5
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

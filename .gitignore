@@ -23,3 +23,9 @@ videos/*/snapshots/
 videos/*/renders_log.txt
 videos/*/.hyperframes/
 node_modules/
+
+# Raspberry Pi runtime build leftovers
+pi/*.egg-info/
+pi/.venv/
+__pycache__/
+.pytest_cache/
